@@ -10,14 +10,19 @@ import torch
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic_settings import CliApp
 from torch import nn
+from torchvision import models
 
 from examples._shared.schema import QuantizationMethod
 from examples._shared.training.data import text_windows, wine
 from examples._shared.training.measurement import Totals
 from examples._shared.training.schema import Config, TaskKind
 from examples._shared.training.training import eager
+from examples._shared.vision.schema import DemoConfig, ModelName
+from examples.efficientnet_b0 import main as efficientnet_example
+from examples.mobilenet_v2 import main as mobilenet_example
 from examples.projection import main as projection_example
 from examples.projection.model import example_model
+from examples.resnet18 import main as resnet_example
 from examples.transformer import main as transformer_example
 from examples.transformer.model import CharacterTransformer
 from examples.windowed_transformer import main as windowed_example
@@ -32,9 +37,10 @@ from qraft.rules import Rules
 from qraft.runtime import OnnxEvaluator
 from tests.outcomes import expect_error, expect_ok
 
-type ModelKind = Literal[
-    TaskKind.TRANSFORMER, TaskKind.WINDOWED, TaskKind.WINE, "projection"
-]
+type ModelKind = (
+    Literal[TaskKind.TRANSFORMER, TaskKind.WINDOWED, TaskKind.WINE, "projection"]
+    | ModelName
+)
 
 
 class ExportCase(BaseModel):
@@ -57,7 +63,13 @@ def cpu_threads() -> None:
 
 @pytest.fixture(
     scope="module",
-    params=[TaskKind.TRANSFORMER, TaskKind.WINDOWED, TaskKind.WINE, "projection"],
+    params=[
+        TaskKind.TRANSFORMER,
+        TaskKind.WINDOWED,
+        TaskKind.WINE,
+        *ModelName,
+        "projection",
+    ],
 )
 def export_case(
     request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
@@ -92,6 +104,15 @@ def export_case(
         case TaskKind() as task:
             model = builders[task](8).eval()
             inputs = np.asarray([[0, 1, 2, 3, 4, 5, 6, 7]], dtype=np.int64)
+        case ModelName.RESNET18:
+            model = models.resnet18(weights=None).eval()
+            inputs = np.ones((1, 3, 32, 32), dtype=np.float32)
+        case ModelName.MOBILENET_V2:
+            model = models.mobilenet_v2(weights=None).eval()
+            inputs = np.ones((1, 3, 32, 32), dtype=np.float32)
+        case ModelName.EFFICIENTNET_B0:
+            model = models.efficientnet_b0(weights=None).eval()
+            inputs = np.ones((1, 3, 32, 32), dtype=np.float32)
     destination = tmp_path_factory.mktemp(str(kind)) / "fp32.onnx"
     torch.onnx.export(
         model,
@@ -129,6 +150,18 @@ def example_stages(
             ]
         case TaskKind.WINE:
             return wine_example.recipes(wine_example.Config(histogram_bins=64))[method]
+        case ModelName.RESNET18:
+            return resnet_example.recipes(resnet_example.Config(histogram_bins=64))[
+                method
+            ]
+        case ModelName.MOBILENET_V2:
+            return mobilenet_example.recipes(
+                mobilenet_example.Config(histogram_bins=64)
+            )[method]
+        case ModelName.EFFICIENTNET_B0:
+            return efficientnet_example.recipes(
+                efficientnet_example.Config(histogram_bins=64)
+            )[method]
         case "projection":
             return projection_example.recipes(
                 projection_example.Config(histogram_bins=64)
@@ -253,8 +286,10 @@ def test_typed_task_cli(selection: str, expected: list[QuantizationMethod]) -> N
     assert config.quiet
 
 
-@pytest.mark.parametrize("config_type", [Config])
-def test_cli_configuration_roundtrip(config_type: type[Config]) -> None:
+@pytest.mark.parametrize("config_type", [Config, DemoConfig])
+def test_cli_configuration_roundtrip(
+    config_type: type[Config] | type[DemoConfig],
+) -> None:
     """Saved reports must accept both the CLI alias and serialized Python field name."""
     config = CliApp.run(config_type, cli_args=["--json", "--quiet"])
     restored = config_type.model_validate_json(config.model_dump_json())

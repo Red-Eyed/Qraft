@@ -1,11 +1,20 @@
 # Example support helpers
 
-The concrete workflow lives in `projection/main.py`. `cli.py` presents results
-and progress controls; `schema.py` defines method identities; `plans.py` writes
-stage plans and coverage; `environment.py` records installed runtime versions.
+The readable workflows live in each named example's `main.py`. This package keeps
+supporting work out of those reading paths:
 
-[Browse the model × method matrix](../README.md).
+- `training/data.py`: cached text, finite tabular data, and disjoint splits.
+- `training/training.py`: minibatch optimization and validated eager inference.
+- `vision/data.py`: image downloads, file selection, and one-image decoding.
+- `vision/models.py`: preprocessing and Torch/ORT output validation.
+- `training/measurement.py` and `vision/measurement.py`: bounded metric totals and
+  prediction galleries/continuations.
+- `*/reporting.py`, `plans.py`, and `environment.py`: saved provenance, NumPy-aware
+  stage-plan JSON, and portable HTML/Markdown reports.
+- `cli.py`: stderr logs and human/JSON final presentation.
 
-`training/` supplies streamed data, disjoint splits, minibatch optimization,
-validated eager inference, metric totals, and saved reports. Each model's
-`main.py` explicitly shows export, calibration mappings, and Qraft recipes.
+There is no shared model-suite runner. Entry points show their model loading,
+Torch export, calibration mappings, and Qraft calls explicitly. Pure numerical
+metrics are separated from cache/disk/runtime work; input arrays stay native.
+
+[Browse the runnable model × method matrix](../README.md).
