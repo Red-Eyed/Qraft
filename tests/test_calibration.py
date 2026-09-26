@@ -139,13 +139,13 @@ def test_absence_and_empty_data(evaluator: IdentityEvaluator) -> None:
 @pytest.mark.parametrize(
     "payload",
     [
-        {"calibration": {"kind": "unknown"}},
-        {"calibration": {"kind": "percentile", "percentile": 101}},
-        {"smoothquant_alpha": float("nan")},
-        {"unknown": True},
+        '{"calibration": {"kind": "unknown"}}',
+        '{"calibration": {"kind": "percentile", "percentile": 101}}',
+        '{"smoothquant_alpha": NaN}',
+        '{"unknown": true}',
     ],
 )
-def test_malformed_configuration(payload: dict[str, object]) -> None:
+def test_malformed_configuration(payload: str) -> None:
     """Reject malformed external configuration before constructing algorithms."""
     with pytest.raises(ValidationError):
-        QuantizationConfig.model_validate(payload)
+        QuantizationConfig.model_validate_json(payload)

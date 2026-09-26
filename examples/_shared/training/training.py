@@ -5,19 +5,21 @@ from typing import assert_never
 
 import numpy as np
 import torch
+from pydantic import ConfigDict, TypeAdapter
 from rich.progress import Progress
 from torch import Tensor, nn
 
 from examples._shared.training.schema import Config, Dataset, TaskKind
 from qraft.domain import FloatArray, InputArray
 
+_TENSOR_OUTPUT = TypeAdapter(
+    Tensor, config=ConfigDict(strict=True, arbitrary_types_allowed=True)
+)
+
 
 def checked_tensor(model: nn.Module, inputs: Tensor) -> Tensor:
     """Validate the dynamically typed Torch module boundary once."""
-    output: object = model(inputs)
-    if not isinstance(output, Tensor):
-        raise ValueError("expected one Torch output tensor")
-    return output
+    return _TENSOR_OUTPUT.validate_python(model(inputs))
 
 
 def eager(model: nn.Module, inputs: InputArray) -> FloatArray:

@@ -7,8 +7,8 @@ from typing import TypedDict, assert_never
 import numpy as np
 
 from examples._shared.schema import Coverage
-from qraft.domain import Graph
-from qraft.plan import QuantizationPlan, QuantizeInput, RescaleInput
+from qraft.domain import FloatArray, Graph, IntArray, PerChannel, PerTensor
+from qraft.plan import Operation, QuantizationPlan, QuantizeInput, RescaleInput
 
 
 class ArrayRecord(TypedDict):
@@ -19,27 +19,100 @@ class ArrayRecord(TypedDict):
     values: list[float]
 
 
-def array_record(value: object) -> ArrayRecord:
-    """Serialize plan arrays; reject unexpected objects using JSON's error contract."""
-    match value:
-        case np.ndarray() as array:
-            numeric = np.asarray(array, dtype=np.float64)
+class GranularityRecord(TypedDict):
+    """Represent per-tensor granularity without an axis."""
+
+
+class ChannelRecord(TypedDict):
+    """Preserve the axis of a per-channel encoding."""
+
+    axis: int
+
+
+class EncodingRecord(TypedDict):
+    """Serialize numerical encoding data separately from its domain model."""
+
+    scale: ArrayRecord
+    zero_point: ArrayRecord
+    granularity: GranularityRecord | ChannelRecord
+
+
+class QuantizeRecord(TypedDict):
+    """Record the selected consumer edge and its encoding."""
+
+    node: str
+    index: int
+    encoding: EncodingRecord
+
+
+class RescaleRecord(TypedDict):
+    """Record paired activation and weight channel rescaling."""
+
+    node: str
+    scale: ArrayRecord
+    activation_axis: int
+    weight_axis: int
+
+
+class PlanRecord(TypedDict):
+    """Preserve stage operations and exclusions in the existing JSON format."""
+
+    operations: list[QuantizeRecord | RescaleRecord]
+    excluded: tuple[str, ...]
+
+
+def array_record(array: FloatArray | IntArray) -> ArrayRecord:
+    """Serialize numerical plan arrays with their original dtype and shape."""
+    numeric = np.asarray(array, dtype=np.float64)
+    return {
+        "dtype": str(array.dtype),
+        "shape": tuple(int(length) for length in array.shape),
+        "values": [float(number) for number in numeric.flat],
+    }
+
+
+def operation_record(operation: Operation) -> QuantizeRecord | RescaleRecord:
+    """Serialize every supported operation without an untyped JSON fallback."""
+    match operation:
+        case QuantizeInput(node=node, index=index, encoding=encoding):
+            granularity: GranularityRecord | ChannelRecord
+            match encoding.granularity:
+                case PerTensor():
+                    granularity = GranularityRecord()
+                case PerChannel(axis=axis):
+                    granularity = ChannelRecord(axis=axis)
+                case _:
+                    assert_never(encoding.granularity)
             return {
-                "dtype": str(array.dtype),
-                "shape": tuple(int(length) for length in array.shape),
-                "values": [float(number) for number in numeric.flat],
+                "node": node,
+                "index": index,
+                "encoding": {
+                    "scale": array_record(encoding.scale),
+                    "zero_point": array_record(encoding.zero_point),
+                    "granularity": granularity,
+                },
+            }
+        case RescaleInput():
+            return {
+                "node": operation.node,
+                "scale": array_record(operation.scale),
+                "activation_axis": operation.activation_axis,
+                "weight_axis": operation.weight_axis,
             }
         case _:
-            raise TypeError(f"unsupported plan value: {type(value).__name__}")
+            assert_never(operation)
 
 
 def save_plans(path: Path, plans: tuple[QuantizationPlan, ...]) -> None:
     """Save complete stage decisions, including scalar/channel encoding arrays."""
-    path.write_text(
-        json.dumps(
-            [plan.model_dump() for plan in plans], default=array_record, indent=2
+    records = [
+        PlanRecord(
+            operations=[operation_record(operation) for operation in plan.operations],
+            excluded=plan.excluded,
         )
-    )
+        for plan in plans
+    ]
+    path.write_text(json.dumps(records, indent=2))
 
 
 def coverage(graph: Graph, plans: tuple[QuantizationPlan, ...]) -> Coverage:

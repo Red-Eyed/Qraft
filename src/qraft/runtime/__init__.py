@@ -6,6 +6,7 @@ from time import perf_counter
 
 import numpy as np
 import onnxruntime as ort
+from numpy.typing import NDArray
 from onnx import ModelProto, TensorProto
 from onnxruntime.capi.onnxruntime_pybind11_state import (
     Fail,
@@ -14,13 +15,18 @@ from onnxruntime.capi.onnxruntime_pybind11_state import (
     NotImplemented,
     RuntimeException,
 )
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 from returns.result import Failure, Result, Success
 
 from qraft.backends.onnx import normalize
 from qraft.calibration import Evaluator, Samples
 from qraft.domain import FloatArray, InputArray
 from qraft.result import FailureKind, QraftError, failure, validate
+
+_OUTPUT_ARRAYS = TypeAdapter(
+    list[NDArray[np.generic]],
+    config=ConfigDict(strict=True, arbitrary_types_allowed=True),
+)
 
 
 class OnnxEvaluator:
@@ -67,12 +73,14 @@ class OnnxEvaluator:
     ) -> Mapping[str, FloatArray]:
         """Validate ORT's dynamic outputs before exposing them to algorithms."""
         session = self._session(outputs)
-        raw: object = session.run(list(outputs), dict(sample))
-        if not isinstance(raw, list) or len(raw) != len(outputs):
+        arrays = _OUTPUT_ARRAYS.validate_python(
+            session.run(list(outputs), dict(sample))
+        )
+        if len(arrays) != len(outputs):
             raise ValueError("runtime returned an invalid output sequence")
         result: dict[str, FloatArray] = {}
-        for name, value in zip(outputs, raw, strict=True):
-            if not isinstance(value, np.ndarray) or value.dtype != np.dtype(np.float32):
+        for name, value in zip(outputs, arrays, strict=True):
+            if value.dtype != np.dtype(np.float32):
                 raise ValueError("runtime returned a non-FP32 tensor")
             array = np.asarray(value, dtype=np.float32)
             if not array.size or not np.all(np.isfinite(array)):

@@ -5,6 +5,8 @@ from pathlib import Path
 from urllib.request import urlopen
 
 import numpy as np
+from numpy.typing import NDArray
+from pydantic import ConfigDict, TypeAdapter
 from returns.result import Failure, Result, Success
 from sklearn.datasets import load_wine
 
@@ -18,15 +20,15 @@ TEXT_URL = (
 )
 TEXT_SHA = "86c4e6aa9db7c042ec79f339dcb96d42b0075e16b8fc2e86bf0ca57e2dc565ed"
 
+_WINE_ARRAYS = TypeAdapter(
+    tuple[NDArray[np.generic], NDArray[np.generic]],
+    config=ConfigDict(strict=True, arbitrary_types_allowed=True),
+)
+
 
 def wine_arrays() -> tuple[FloatArray, Tokens]:
     """Validate sklearn's external tuple before exposing native typed arrays."""
-    raw: object = load_wine(return_X_y=True)
-    if not isinstance(raw, tuple) or len(raw) != 2:
-        raise ValueError("Wine loader must return features and labels")
-    features, labels = raw
-    if not isinstance(features, np.ndarray) or not isinstance(labels, np.ndarray):
-        raise ValueError("Wine data must contain NumPy arrays")
+    features, labels = _WINE_ARRAYS.validate_python(load_wine(return_X_y=True))
     return np.asarray(features, dtype=np.float32), np.asarray(labels, dtype=np.int64)
 
 

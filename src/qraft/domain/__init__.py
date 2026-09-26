@@ -7,7 +7,7 @@ from typing import Self, assert_never
 
 import numpy as np
 from numpy.typing import NDArray
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 FloatArray = NDArray[np.float32]
 type InputArray = FloatArray | NDArray[np.int64]
@@ -73,11 +73,13 @@ class Node(BaseModel):
     outputs: tuple[str, ...] = Field()
     attributes: Mapping[str, int | float | tuple[int, ...]] = Field()
 
-    @model_validator(mode="after")
-    def freeze_attributes(self) -> Self:
+    @field_validator("attributes")
+    @classmethod
+    def freeze_attributes(
+        cls, value: Mapping[str, int | float | tuple[int, ...]]
+    ) -> Mapping[str, int | float | tuple[int, ...]]:
         """Detach the attribute mapping so callers cannot mutate this snapshot."""
-        object.__setattr__(self, "attributes", MappingProxyType(dict(self.attributes)))
-        return self
+        return MappingProxyType(dict(value))
 
 
 class Graph(BaseModel):
@@ -89,13 +91,21 @@ class Graph(BaseModel):
     nodes: tuple[Node, ...] = Field()
     weights: Mapping[str, FloatArray] = Field()
 
+    @field_validator("weights")
+    @classmethod
+    def freeze_weights(
+        cls, value: Mapping[str, FloatArray]
+    ) -> Mapping[str, FloatArray]:
+        """Detach constants and their mapping from caller-owned storage."""
+        return MappingProxyType(
+            {name: frozen_constant(array) for name, array in value.items()}
+        )
+
     @model_validator(mode="after")
-    def freeze_weights(self) -> Self:
-        """Own immutable constants and require unique node identities."""
+    def validate_identities(self) -> Self:
+        """Require unique node identities within the snapshot."""
         if len({node.name for node in self.nodes}) != len(self.nodes):
             raise ValueError("graph node identities must be unique")
-        weights = {name: frozen_constant(value) for name, value in self.weights.items()}
-        object.__setattr__(self, "weights", MappingProxyType(weights))
         return self
 
 
@@ -109,17 +119,32 @@ class Encoding(BaseModel):
     zero_point: IntArray = Field()
     granularity: Granularity = Field()
 
-    @model_validator(mode="after")
-    def validate_invariants(self) -> Self:
-        """Reject invalid numerical encodings and detach mutable aliases."""
-        scale = np.array(self.scale, dtype=np.float32, copy=True)
-        zero = np.array(self.zero_point, copy=True)
+    @field_validator("scale")
+    @classmethod
+    def freeze_scale(cls, value: FloatArray) -> FloatArray:
+        """Own positive finite scales, preserving float32 conversion on admission."""
+        scale = np.array(value, dtype=np.float32, copy=True)
+        if not np.all(np.isfinite(scale)) or np.any(scale <= 0):
+            raise ValueError("scales must be positive and finite")
+        scale.flags.writeable = False
+        return scale
+
+    @field_validator("zero_point")
+    @classmethod
+    def freeze_zero_point(cls, value: IntArray) -> IntArray:
+        """Own zero points without silently converting invalid storage types."""
+        zero = value.copy()
         if zero.dtype not in (np.dtype(np.int8), np.dtype(np.uint8)):
             raise ValueError("zero point must have int8 or uint8 storage")
-        if scale.shape != zero.shape or not np.all(np.isfinite(scale)):
-            raise ValueError("encoding shapes must match and scales must be finite")
-        if np.any(scale <= 0):
-            raise ValueError("scales must be positive")
+        zero.flags.writeable = False
+        return zero
+
+    @model_validator(mode="after")
+    def validate_invariants(self) -> Self:
+        """Require matching shapes and the layout promised by the granularity."""
+        scale = self.scale
+        if scale.shape != self.zero_point.shape:
+            raise ValueError("encoding shapes must match")
         match self.granularity:
             case PerTensor():
                 if scale.ndim != 0:
@@ -129,10 +154,6 @@ class Encoding(BaseModel):
                     raise ValueError("per-channel encoding requires a nonempty vector")
             case _:
                 assert_never(self.granularity)
-        scale.flags.writeable = False
-        zero.flags.writeable = False
-        object.__setattr__(self, "scale", scale)
-        object.__setattr__(self, "zero_point", zero)
         return self
 
 

@@ -27,6 +27,7 @@ from examples._shared.vision.measurement import Runner, measure
 from examples._shared.vision.models import (
     LoadedModel,
     OrtRunner,
+    TorchImageTransform,
     TorchRunner,
     checked_categories,
 )
@@ -178,8 +179,8 @@ def load_model() -> LoadedModel:
     model = models.efficientnet_b0(weights=weights).eval()
     return LoadedModel(
         model,
-        weights.transforms(),
-        checked_categories(weights.meta["categories"]),
+        TorchImageTransform(weights.transforms()),
+        checked_categories(weights),
         str(weights),
     )
 

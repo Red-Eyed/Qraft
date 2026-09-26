@@ -2,9 +2,9 @@
 
 from collections.abc import Mapping
 from types import MappingProxyType
-from typing import Protocol, Self, runtime_checkable
+from typing import Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from returns.result import Result
 
 from qraft.calibration import HistogramStats, MinMaxStats, Requirement
@@ -32,12 +32,21 @@ class Statistics(BaseModel):
     ranges: Mapping[Requirement, MinMaxStats] = Field()
     histograms: Mapping[Requirement, HistogramStats] = Field()
 
-    @model_validator(mode="after")
-    def freeze_mappings(self) -> Self:
-        """Detach caller mappings so ordinary mutation cannot change planning inputs."""
-        object.__setattr__(self, "ranges", MappingProxyType(dict(self.ranges)))
-        object.__setattr__(self, "histograms", MappingProxyType(dict(self.histograms)))
-        return self
+    @field_validator("ranges")
+    @classmethod
+    def freeze_ranges(
+        cls, value: Mapping[Requirement, MinMaxStats]
+    ) -> Mapping[Requirement, MinMaxStats]:
+        """Detach the range mapping from the caller's mutable collection."""
+        return MappingProxyType(dict(value))
+
+    @field_validator("histograms")
+    @classmethod
+    def freeze_histograms(
+        cls, value: Mapping[Requirement, HistogramStats]
+    ) -> Mapping[Requirement, HistogramStats]:
+        """Detach the histogram mapping from the caller's mutable collection."""
+        return MappingProxyType(dict(value))
 
 
 @runtime_checkable

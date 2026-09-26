@@ -26,6 +26,44 @@ class Report(BaseModel):
     [
         ("from qraft.domain import PerChannel\nvalue = PerChannel(axis=1)\n", "", 0),
         (
+            "from qraft.calibration import MinMaxStats\n"
+            "def mutate(stats: MinMaxStats) -> None:\n"
+            "    stats.minimum = stats.maximum\n",
+            "read-only",
+            3,
+        ),
+        (
+            "from qraft.calibration import HistogramStats\n"
+            "def mutate(stats: HistogramStats) -> None:\n"
+            "    stats.counts = stats.counts.copy()\n",
+            "read-only",
+            3,
+        ),
+        (
+            "from qraft.domain import Encoding\n"
+            "def mutate(encoding: Encoding) -> None:\n"
+            "    encoding.scale = encoding.scale.copy()\n",
+            "read-only",
+            3,
+        ),
+        (
+            "from qraft.plan import RescaleInput\n"
+            "def mutate(operation: RescaleInput) -> None:\n"
+            "    operation.scale = operation.scale.copy()\n",
+            "read-only",
+            3,
+        ),
+        (
+            "from PIL import Image\n"
+            "from torch import nn\n"
+            "from examples._shared.vision.models import LoadedModel\n"
+            "def transform(image: Image.Image) -> str:\n"
+            "    return 'invalid output'\n"
+            "model = LoadedModel(nn.Identity(), transform, (), 'test')\n",
+            "bad-argument-type",
+            6,
+        ),
+        (
             "from returns.result import Result\n"
             "from qraft.result import QraftError\n"
             "def read(value: Result[int, QraftError]) -> None:\n"

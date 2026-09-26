@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from typing import Self, assert_never
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 from returns.result import Result, Success
 
 from qraft.domain import Encoding, FloatArray, frozen_array
@@ -33,14 +40,14 @@ class RescaleInput(BaseModel):
     activation_axis: int = Field()
     weight_axis: int = Field()
 
-    @model_validator(mode="after")
-    def validate_invariants(self) -> Self:
+    @field_validator("scale")
+    @classmethod
+    def freeze_scale(cls, value: FloatArray) -> FloatArray:
         """Own a positive finite channel vector."""
-        scale = frozen_array(self.scale)
+        scale = frozen_array(value)
         if scale.ndim != 1 or (scale <= 0).any():
             raise ValueError("rescaling requires a positive channel vector")
-        object.__setattr__(self, "scale", scale)
-        return self
+        return scale
 
 
 type Operation = QuantizeInput | RescaleInput

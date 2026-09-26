@@ -4,7 +4,7 @@ from collections.abc import Callable, Iterable, Mapping
 from typing import Protocol, Self, runtime_checkable
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from returns.result import Failure, Result, Success
 
 from qraft.domain import Absent, FloatArray, InputArray, frozen_array
@@ -42,14 +42,18 @@ class MinMaxStats(BaseModel):
     minimum: FloatArray = Field()
     maximum: FloatArray = Field()
 
+    @field_validator("minimum", "maximum")
+    @classmethod
+    def freeze_extrema(cls, value: FloatArray) -> FloatArray:
+        """Own finite, nonempty extrema independently of caller storage."""
+        return frozen_array(value)
+
     @model_validator(mode="after")
     def validate_invariants(self) -> Self:
-        """Validate compatible ordered extrema and freeze their storage."""
-        low, high = (frozen_array(self.minimum), frozen_array(self.maximum))
+        """Require compatible shapes and ordered extrema."""
+        low, high = self.minimum, self.maximum
         if low.shape != high.shape or np.any(low > high):
             raise ValueError("invalid extrema")
-        object.__setattr__(self, "minimum", low)
-        object.__setattr__(self, "maximum", high)
         return self
 
 
@@ -62,22 +66,43 @@ class HistogramStats(BaseModel):
     edges: np.ndarray[tuple[int, ...], np.dtype[np.float64]] = Field()
     counts: np.ndarray[tuple[int, ...], np.dtype[np.int64]] = Field()
 
+    @field_validator("edges")
+    @classmethod
+    def freeze_edges(
+        cls, value: np.ndarray[tuple[int, ...], np.dtype[np.float64]]
+    ) -> np.ndarray[tuple[int, ...], np.dtype[np.float64]]:
+        """Own finite, increasing float64 bin boundaries."""
+        if value.dtype != np.float64:
+            raise ValueError("histograms require float64 edges")
+        if (
+            value.ndim != 1
+            or not np.all(np.isfinite(value))
+            or np.any(np.diff(value) <= 0)
+        ):
+            raise ValueError("histogram edges must be a finite increasing vector")
+        edges = value.copy()
+        edges.flags.writeable = False
+        return edges
+
+    @field_validator("counts")
+    @classmethod
+    def freeze_counts(
+        cls, value: np.ndarray[tuple[int, ...], np.dtype[np.int64]]
+    ) -> np.ndarray[tuple[int, ...], np.dtype[np.int64]]:
+        """Own a populated vector of nonnegative int64 bin counts."""
+        if value.dtype != np.int64:
+            raise ValueError("histograms require int64 counts")
+        if value.ndim != 1 or np.any(value < 0) or value.sum() <= 0:
+            raise ValueError("calibration replay yielded no values or invalid counts")
+        counts = value.copy()
+        counts.flags.writeable = False
+        return counts
+
     @model_validator(mode="after")
     def validate_invariants(self) -> Self:
-        """Own ordered finite edges and nonnegative populated integer counts."""
-        edges, counts = self.edges.copy(), self.counts.copy()
-        if edges.dtype != np.float64 or counts.dtype != np.int64:
-            raise ValueError("histograms require float64 edges and int64 counts")
-        if edges.ndim != 1 or counts.ndim != 1 or edges.size != counts.size + 1:
+        """Require one more bin boundary than count."""
+        if self.edges.size != self.counts.size + 1:
             raise ValueError("invalid histogram dimensions")
-        if not np.all(np.isfinite(edges)) or np.any(np.diff(edges) <= 0):
-            raise ValueError("histogram edges must be finite and increasing")
-        if np.any(counts < 0) or counts.sum() <= 0:
-            raise ValueError("calibration replay yielded no values or invalid counts")
-        edges.flags.writeable = False
-        counts.flags.writeable = False
-        object.__setattr__(self, "edges", edges)
-        object.__setattr__(self, "counts", counts)
         return self
 
 
