@@ -21,3 +21,10 @@ the graph, executes shared CPU calibration, lowers edge-local QDQ or SmoothQuant
 plans, and returns a typed result. SmoothQuant requires fresh calibration before
 static W8A8. See the [backend guide](src/qraft/backends/onnx/README.md) and
 [runtime guide](src/qraft/runtime/README.md) for the boundary contracts and limits.
+
+## Run a demonstration
+
+`just example` creates a native ONNX projection, calibrates it, applies MinMax,
+Percentile, and SmoothQuant followed by MinMax, and compares held-out outputs.
+It prepares output files automatically without downloading weights or data.
+Start with the [projection tutorial](examples/projection/README.md).

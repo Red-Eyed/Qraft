@@ -1,6 +1,6 @@
 preset = "strict"
 search-path = ["."]
-project-includes = ["src", "tests"]
+project-includes = ["src", "tests", "examples"]
 project-excludes = ["tests/typecheck/invalid"]
 python-version = "3.12"
 

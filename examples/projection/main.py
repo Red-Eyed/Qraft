@@ -1,0 +1,123 @@
+"""Compare selected quantization recipes on a self-contained FP32 projection."""
+
+from datetime import UTC, datetime
+from importlib.metadata import version
+
+import onnx
+from onnx import ModelProto
+from pydantic_settings import CliApp
+from returns.result import Failure, Result, Success
+from rich.console import Console
+from rich.progress import Progress
+
+from examples._shared.cli import run_and_report
+from examples._shared.plans import coverage, save_plans
+from examples._shared.schema import QuantizationMethod
+from examples.projection.model import example_model, sample_source
+from examples.projection.reporting import save
+from examples.projection.schema import Config, Report, Variant
+from qraft.backends.onnx import describe
+from qraft.backends.onnx.pipeline import quantize
+from qraft.config import PercentileConfig, QuantizationConfig
+from qraft.result import QraftError
+from qraft.runtime import OnnxEvaluator, evaluate
+
+
+def run(config: Config) -> Result[Report, QraftError]:
+    """Persist the original graph and compare only the explicitly selected recipes."""
+    config.output.mkdir(parents=True, exist_ok=True)
+    model = example_model()
+    onnx.save(model, config.output / "onnx_fp32.onnx")
+    variants: list[Variant] = []
+    console = Console(stderr=True, quiet=config.quiet)
+    with Progress(console=console, disable=config.quiet) as progress:
+        for recipe in config.methods:
+            match run_variant(model, recipe, config, progress):
+                case Failure() as error:
+                    return error
+                case _ as resolved:
+                    variants.append(resolved.unwrap())
+    report = Report(
+        created_at=datetime.now(UTC),
+        qraft=version("qraft"),
+        config=config,
+        baseline=config.output / "onnx_fp32.onnx",
+        variants=tuple(variants),
+    )
+    save(report)
+    return Success(report)
+
+
+def recipes(config: Config) -> dict[QuantizationMethod, QuantizationConfig]:
+    """Expose the minimal Qraft configuration for each matrix column."""
+    return {
+        QuantizationMethod.MINMAX: QuantizationConfig(),
+        QuantizationMethod.PERCENTILE: QuantizationConfig(
+            calibration=PercentileConfig(percentile=config.percentile)
+        ),
+        QuantizationMethod.SMOOTHQUANT: QuantizationConfig(
+            smoothquant=True, smoothquant_alpha=config.smoothquant_alpha
+        ),
+    }
+
+
+def run_variant(
+    model: ModelProto,
+    recipe: QuantizationMethod,
+    config: Config,
+    progress: Progress,
+) -> Result[Variant, QraftError]:
+    """Quantize from the FP32 source, evaluate held-out batches, and save coverage."""
+    method = recipe.variant()
+    calibration = sample_source(config.calibration_seed, config.calibration_samples)
+    quantization = recipes(config)[recipe]
+    with progress.console.status(f"{recipe.value}: calibrating and lowering"):
+        outcome = quantize(
+            model,
+            calibration,
+            quantization.stages(),
+            histogram_bins=config.histogram_bins,
+        )
+    match outcome:
+        case Failure() as error:
+            return error
+        case _ as resolved:
+            result = resolved.unwrap()
+    graph = result.model
+    match describe(model):
+        case Failure() as error:
+            return error
+        case _ as resolved:
+            source_graph = resolved.unwrap()
+    scope = coverage(source_graph, result.plans)
+    progress.console.print(f"{recipe.value}: measuring held-out projection error")
+    evaluation = sample_source(config.evaluation_seed, config.evaluation_samples)
+    match evaluate(OnnxEvaluator(model), OnnxEvaluator(graph), evaluation, ("y",)):
+        case Failure() as error:
+            return error
+        case _ as resolved:
+            metrics = resolved.unwrap()
+    artifact = config.output / f"{method.value}.onnx"
+    onnx.save(graph, artifact)
+    (config.output / f"{method.value}.coverage.json").write_text(
+        scope.model_dump_json(indent=2)
+    )
+    save_plans(config.output / f"{method.value}.plan.json", result.plans)
+    return Success(
+        Variant(
+            method=method,
+            artifact=artifact.relative_to(config.output),
+            metrics=metrics,
+            coverage=scope,
+        )
+    )
+
+
+def main() -> None:
+    """Expose method selection, progress controls, and human or JSON output."""
+    config = CliApp.run(Config)
+    run_and_report(config, run, output=config.output, json_output=config.json_output)
+
+
+if __name__ == "__main__":
+    main()

@@ -8,6 +8,9 @@ check:
 test *args:
     uv run --locked --group examples pytest -n auto -q {{args}}
 
+example model="projection" *args:
+    uv run --locked --group examples -m examples.{{model}}.main {{args}}
+
 test-algorithms *args:
     uv run --locked pytest --confcutdir=tests/algorithms tests/algorithms -q {{args}}
 
