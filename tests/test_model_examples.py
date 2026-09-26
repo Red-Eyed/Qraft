@@ -18,6 +18,8 @@ from examples._shared.training.measurement import Totals
 from examples._shared.training.schema import Config, TaskKind
 from examples._shared.training.training import eager
 from examples._shared.vision.schema import DemoConfig, ModelName
+from examples.character_rnn import main as rnn_example
+from examples.character_rnn.model import CharacterRNN
 from examples.efficientnet_b0 import main as efficientnet_example
 from examples.mobilenet_v2 import main as mobilenet_example
 from examples.projection import main as projection_example
@@ -37,10 +39,7 @@ from qraft.rules import Rules
 from qraft.runtime import OnnxEvaluator
 from tests.outcomes import expect_error, expect_ok
 
-type ModelKind = (
-    Literal[TaskKind.TRANSFORMER, TaskKind.WINDOWED, TaskKind.WINE, "projection"]
-    | ModelName
-)
+type ModelKind = TaskKind | ModelName | Literal["projection"]
 
 
 class ExportCase(BaseModel):
@@ -61,23 +60,15 @@ def cpu_threads() -> None:
     torch.set_num_threads(1)
 
 
-@pytest.fixture(
-    scope="module",
-    params=[
-        TaskKind.TRANSFORMER,
-        TaskKind.WINDOWED,
-        TaskKind.WINE,
-        *ModelName,
-        "projection",
-    ],
-)
+@pytest.fixture(scope="module", params=[*TaskKind, *ModelName, "projection"])
 def export_case(
     request: pytest.FixtureRequest, tmp_path_factory: pytest.TempPathFactory
 ) -> ExportCase:
-    """Export the available Torch architectures offline and the ONNX projection."""
+    """Export seven Torch architectures offline and the built-in ONNX projection."""
     kind: ModelKind = request.param
     torch.manual_seed(7)
     builders: dict[TaskKind, Callable[[int], nn.Module]] = {
+        TaskKind.TEXT: CharacterRNN,
         TaskKind.TRANSFORMER: CharacterTransformer,
         TaskKind.WINDOWED: WindowedCharacterTransformer,
     }
@@ -148,6 +139,8 @@ def example_stages(
             return windowed_example.recipes(windowed_example.Config(histogram_bins=64))[
                 method
             ]
+        case TaskKind.TEXT:
+            return rnn_example.recipes(rnn_example.Config(histogram_bins=64))[method]
         case TaskKind.WINE:
             return wine_example.recipes(wine_example.Config(histogram_bins=64))[method]
         case ModelName.RESNET18:
@@ -211,7 +204,7 @@ def test_transformer_causality(builder: Callable[[int], nn.Module]) -> None:
     second = first.copy()
     second[:, 4:] = 0
     np.testing.assert_allclose(
-        eager(model, first)[:, :4], eager(model, second)[:, :4], atol=1e-06
+        eager(model, first)[:, :4], eager(model, second)[:, :4], atol=1e-6
     )
 
 
@@ -238,8 +231,8 @@ def test_wine_split_and_normalization() -> None:
     )
     assert not (train & calibration or train & evaluation or calibration & evaluation)
     assert len(train | calibration | evaluation) == 178
-    np.testing.assert_allclose(data.train.inputs.mean(axis=0), 0, atol=1e-05)
-    np.testing.assert_allclose(data.train.inputs.std(axis=0), 1, atol=1e-05)
+    np.testing.assert_allclose(data.train.inputs.mean(axis=0), 0, atol=1e-5)
+    np.testing.assert_allclose(data.train.inputs.std(axis=0), 1, atol=1e-5)
     assert data.calibration.identities == wine(Config()).calibration.identities
 
 
