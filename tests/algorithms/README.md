@@ -19,8 +19,9 @@ The equivalent direct command is:
 uv run --locked pytest --confcutdir=tests/algorithms tests/algorithms -q
 ```
 
-`--confcutdir` keeps this suite independent of parent integration fixtures.
-These tests need no Torch, ONNX Runtime execution, model downloads, or datasets.
+`--confcutdir` prevents loading the parent `tests/conftest.py`, which builds ONNX
+integration fixtures. These tests need no Torch, ONNX Runtime execution, model
+downloads, or datasets. `just check` runs them together with the integration suite.
 
 ## What is tested
 
@@ -52,4 +53,5 @@ algorithm math; execution dependencies belong to the shell tests.
 
 `RecordingEvaluator` and `ReplayableSource` in `test_shell.py` expose requests and
 replay counts at the actual injected boundary. They do not replace the algorithm
-under test.
+under test. Real lowering and runtime behavior remain covered by
+[`../test_pipeline.py`](../test_pipeline.py).

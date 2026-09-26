@@ -1,0 +1,215 @@
+"""Expected failures stay typed and do not expose partial graph mutations."""
+
+from collections.abc import Mapping
+from copy import deepcopy
+from pathlib import Path
+
+import numpy as np
+import pytest
+from onnx import numpy_helper
+from returns.primitives.exceptions import UnwrapFailedError
+from returns.result import Failure, Result, Success
+
+from qraft.algorithms import Algorithm, Needs, Statistics, build_plan
+from qraft.algorithms.static import StaticW8A8
+from qraft.backends.onnx import describe, load
+from qraft.backends.onnx.pipeline import quantize
+from qraft.calibration import Requirement, Samples, collect, extrema
+from qraft.config import supported
+from qraft.domain import FloatArray, Graph, InputArray, Node
+from qraft.plan import QuantizationPlan
+from qraft.result import FailureKind, QraftError, failure, validate
+from qraft.rules import Rules
+from qraft.runtime import OnnxEvaluator, compare, evaluate
+from tests.conftest import OperatorCase
+from tests.outcomes import expect_error, expect_ok
+from tests.test_calibration import IdentityEvaluator
+
+
+@pytest.mark.parametrize("successful", [True, False])
+def test_returns_composition(successful: bool) -> None:
+    """Compose library containers and preserve diagnostics without running callbacks."""
+    error = QraftError(
+        kind=FailureKind.INVALID_DATA, operation="composition", detail="bad input"
+    )
+    outcome: Result[int, QraftError] = Success(2) if successful else Failure(error)
+    visited: list[int] = []
+
+    def increment(value: int) -> int:
+        """Record success mapping so failure short-circuiting is observable."""
+        visited.append(value)
+        return value + 1
+
+    def double(value: int) -> Result[int, QraftError]:
+        """Return another library result to exercise monadic composition."""
+        visited.append(value)
+        return Success(value * 2)
+
+    result = outcome.map(increment).bind(double)
+    if successful:
+        assert result == Success(6)
+        assert visited == [2, 3]
+    else:
+        assert result.failure() is error
+        assert visited == []
+
+
+def test_returns_unwrap_is_runtime_checked() -> None:
+    """Expose returns' actual unchecked unwrap behavior rather than a static promise."""
+    outcome = failure(FailureKind.INVALID_DATA, "unwrap", "bad input")
+    with pytest.raises(UnwrapFailedError):
+        outcome.unwrap()
+
+
+def test_returns_map_propagates_programming_error() -> None:
+    """Library composition must not convert arbitrary callback bugs to Qraft errors."""
+
+    def broken(value: int) -> int:
+        """Produce an unexpected callback error outside admission validation."""
+        raise TypeError(f"callback bug for {value}")
+
+    with pytest.raises(TypeError, match="callback bug"):
+        Success(1).map(broken)
+
+
+class RejectPlanning:
+    """Exercise plugin rejection without throwing to stop the pipeline."""
+
+    def requirements(self, node: Node, graph: Graph) -> Result[Needs, QraftError]:
+        """Reject admission before the collector consumes any data."""
+        return failure(FailureKind.UNSUPPORTED, node.name, "plugin declined layout")
+
+    def plan(
+        self, node: Node, graph: Graph, stats: Statistics
+    ) -> Result[QuantizationPlan, QraftError]:
+        """Make accidental planning after admission rejection visible."""
+        pytest.fail("a rejected plugin must never plan")
+
+
+def test_plugin_rejection_stops_collection(operator_case: OperatorCase) -> None:
+    """Propagate plugin errors and avoid calibration side effects after rejection."""
+
+    def unused() -> Samples:
+        """Create a source factory whose consumption is forbidden in this test."""
+
+        def samples() -> tuple[()]:
+            """Fail if admission mistakenly starts calibration."""
+            pytest.fail("rejected layout must not consume samples")
+
+        return samples
+
+    rules: Rules[Algorithm] = Rules(default=RejectPlanning())
+    outcome = build_plan(
+        expect_ok(describe(operator_case.model)), IdentityEvaluator(), unused(), rules
+    )
+    error = expect_error(outcome, "plugin declined")
+    assert error.kind is FailureKind.UNSUPPORTED
+
+
+def test_missing_file(tmp_path: Path) -> None:
+    """Expose I/O category and operation without forcing callers to catch OSError."""
+    error = expect_error(load(tmp_path / "missing.onnx"), "missing.onnx")
+    assert error.kind is FailureKind.IO
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf")])
+def test_nonfinite_observation(value: float) -> None:
+    """Reject nonfinite numerical observations as a typed data error."""
+    error = expect_error(extrema(np.asarray([value], dtype=np.float32), ()), "finite")
+    assert error.kind is FailureKind.INVALID_DATA
+
+
+def test_foreign_checker_error(operator_case: OperatorCase, samples: Samples) -> None:
+    """Translate ONNX's documented checker exception, which is not a ValueError."""
+    model = deepcopy(operator_case.model)
+    model.graph.node[0].input[0] = "nonexistent"
+    before = model.SerializeToString()
+    expect_error(quantize(model, samples, (supported(StaticW8A8()),)), "nonexistent")
+    assert model.SerializeToString() == before
+
+
+def test_foreign_runtime_error(operator_case: OperatorCase) -> None:
+    """Return an execution failure when ORT rejects an incompatible input dtype."""
+    evaluator = OnnxEvaluator(operator_case.model)
+    error = expect_error(
+        evaluator.run(
+            {"x": np.ones(operator_case.input_shape, dtype=np.int64)}, ("y",)
+        ),
+        "data type",
+    )
+    assert error.kind is FailureKind.EXECUTION
+
+
+def test_mask_constants_and_invalid_weights(
+    operator_case: OperatorCase, samples: Samples
+) -> None:
+    """Preserve masks with infinities while rejecting nonfinite selected weights."""
+    model = deepcopy(operator_case.model)
+    model.graph.initializer.append(
+        numpy_helper.from_array(np.asarray([0, -np.inf], dtype=np.float32), "mask")
+    )
+    graph = expect_ok(describe(model))
+    assert np.isneginf(graph.weights["mask"][1])
+    assert not graph.weights["mask"].flags.writeable
+    weight = np.full(tuple(model.graph.initializer[0].dims), np.inf, dtype=np.float32)
+    model.graph.initializer[0].CopyFrom(numpy_helper.from_array(weight, "w"))
+    expect_error(quantize(model, samples, (supported(StaticW8A8()),)), "finite")
+
+
+def test_empty_evaluation() -> None:
+    """Report empty held-out data through the evaluation return contract."""
+    evaluator = IdentityEvaluator()
+    error = expect_error(
+        evaluate(evaluator, evaluator, lambda: iter(()), ("x",)), "no values"
+    )
+    assert error.kind is FailureKind.EMPTY
+
+
+def test_missing_observed_output() -> None:
+    """A missing plugin observation is diagnosed before array indexing."""
+
+    class MissingEvaluator:
+        """Return a valid result envelope with an incomplete observation mapping."""
+
+        def run(
+            self, sample: "Mapping[str, InputArray]", outputs: tuple[str, ...]
+        ) -> "Result[Mapping[str, FloatArray], QraftError]":
+            """Demonstrate the runtime obligation beyond protocol signature checking."""
+            return Success({})
+
+    expect_error(
+        collect(MissingEvaluator(), lambda: iter(({},)), (Requirement(tensor="x"),)),
+        "missing output x",
+    )
+
+
+def test_programming_error_is_not_swallowed() -> None:
+    """Expected-outcome helpers must not hide arbitrary programming errors."""
+
+    def broken() -> int:
+        """Produce an unexpected error outside the documented admission contract."""
+        raise TypeError("implementation bug")
+
+    with pytest.raises(TypeError, match="implementation bug"):
+        validate("programmer error", broken)
+
+
+@pytest.mark.parametrize(
+    "actual",
+    [
+        np.asarray([], dtype=np.float32),
+        np.asarray([np.nan], dtype=np.float32),
+        np.asarray([np.inf], dtype=np.float32),
+    ],
+)
+def test_invalid_evaluation_values(actual: FloatArray) -> None:
+    """Invalid observations from a plugin cannot leak NaN metrics or reducer errors."""
+    expect_error(compare(actual, np.zeros_like(actual)), "nonempty and finite")
+
+
+def test_evaluation_shape_mismatch() -> None:
+    """A plugin's changed output dimensions produce an explicit data error."""
+    expect_error(
+        compare(np.ones(2, dtype=np.float32), np.ones(3, dtype=np.float32)),
+        "shapes differ",
+    )

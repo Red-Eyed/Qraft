@@ -20,6 +20,7 @@ computation is preserved; a later stage recalibrates before quantization.
 | [`static.py`](static.py) | Static W8A8 decisions from graph weights and supplied statistics |
 | [`smoothquant.py`](smoothquant.py) | Channel balancing decisions from graph weights and supplied statistics |
 | [`shell.py`](shell.py) | `build_plan`: invoke calibration through an injected evaluator/sample factory |
+| [`../backends/onnx/pipeline.py`](../backends/onnx/pipeline.py) | Choose ORT execution, lower each revision, and calibrate subsequent stages |
 
 ```mermaid
 flowchart TD
@@ -30,6 +31,7 @@ flowchart TD
     C --> F[Core: assemble_plan]
     E --> F
     F --> G[Quantization plan]
+    G --> H[ONNX pipeline: lower, then start the next revision]
 ```
 
 `Selection` carries the graph used during rule resolution. Assembly does not
