@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "qraft"
-version = "0.5.7"
+version = "0.5.8"
 description = "Composable post-training quantization with explicit plans"
 readme = "README.md"
 license = "MIT"
