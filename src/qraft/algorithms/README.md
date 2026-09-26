@@ -84,7 +84,8 @@ just test-algorithms -k two_channel_example
 The target excludes the parent ONNX integration fixtures from pytest discovery.
 Its tests use NumPy and typed domain records; shell tests use in-memory execution
 dependencies. See the [test guide](../../../tests/algorithms/README.md) for cases
-and the direct uv command.
+and the direct uv command. `just check` also runs the real ONNX Runtime integration
+tests and Torch export examples.
 
 ## Extending an algorithm
 
