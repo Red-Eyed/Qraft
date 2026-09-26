@@ -1,0 +1,13 @@
+preset = "strict"
+search-path = ["."]
+project-includes = ["src", "tests"]
+project-excludes = ["tests/typecheck/invalid"]
+python-version = "3.12"
+
+[errors]
+explicit-any = true
+implicit-any = true
+no-any-return = true
+unannotated-return = true
+unannotated-parameter = true
+unused-ignore = true
