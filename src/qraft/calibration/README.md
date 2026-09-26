@@ -5,7 +5,7 @@ samples through an injected `Evaluator`. Empty axes mean per-tensor reduction;
 retained axes request channelwise extrema. Changing retained dimensions is an error.
 Collection, replay, and calibration policy intervals return typed `Result` values;
 empty sources, missing observations, invalid ranges, and out-of-range replay produce
-`returns.result.Failure` with `QraftError` diagnostics. Evaluator plugins return
+`qraft.result.Err` with `QraftError` diagnostics. Evaluator plugins return
 errors through the same contract. Statistics constructors retain Pydantic
 validation exceptions.
 

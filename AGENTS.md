@@ -16,8 +16,8 @@ produces both an ONNX graph and inspectable quantization plans.
   granularity. A plan selects consumer edges to quantize or channels to rescale.
 - MinMax uses observed extrema; Percentile clips histogram tails. SmoothQuant
   balances activation and weight channels before a separate quantization stage.
-- `returns.result` supplies `Result`, `Success`, and `Failure` for expected
-  failures. Qraft adds the typed `QraftError` diagnostic payload.
+- `qraft.result` defines the local `Result[T, E] = Ok[T] | Err[E]` union and the
+  Pydantic `QraftError` diagnostic payload. No result-container dependency is used.
 - Stackformers supplies the attention components in Transformer examples.
 
 ## Development commands
@@ -61,10 +61,25 @@ The Python algorithm and selector protocols remain open to extensions. Example
 entry points use pydantic-settings and keep model loading, export, and stage
 selection visible in their own `main.py` files.
 
-Expected execution, data, and planning failures return `Failure(QraftError)`.
-Direct model construction can raise Pydantic validation errors, and unexpected
-plugin exceptions propagate. Preserve these distinctions when implementing a
-protocol. Handle failures before unwrapping results.
+Use `Result` for expected execution, data, and planning failures that callers can
+meaningfully handle. Do not require every operation to return `Result`: operations
+expected to succeed can return their value normally and raise on failure.
+Programming errors, broken invariants, and unexpected plugin failures remain
+exceptions. Direct model construction can raise Pydantic validation errors.
+Translate documented failures only at the boundary where they are expected;
+never catch arbitrary exceptions just to fit a result signature. Preserve each
+protocol's established failure contract. Handle results through explicit matching.
+
+Use explicit `match` branches for `Ok(value)` and `Err(error)`, or `Err() as error`
+when propagating the original container. Never interpret a wildcard as success.
+Bind tuple payloads in `Ok(payload)` and unpack inside the branch; Pyrefly does
+not establish exhaustiveness for nested tuple patterns. The local union supports
+exhaustive checking with `assert_never` when needed. Do not add unwrapping methods,
+`.map()`/`.bind()` chains, compatibility aliases, or an external result library.
+
+`Ok` and `Err` are frozen generic dataclasses that carry native values unchanged;
+they do not parse, copy, or validate their payloads. Input validation remains at
+Pydantic boundaries, and domain constructors retain their ownership checks.
 
 ## Type safety and validation
 

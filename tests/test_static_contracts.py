@@ -64,7 +64,7 @@ class Report(BaseModel):
             6,
         ),
         (
-            "from returns.result import Result\n"
+            "from qraft.result import Result\n"
             "from qraft.result import QraftError\n"
             "def read(value: Result[int, QraftError]) -> None:\n"
             "    integer: int = value\n",
@@ -72,50 +72,91 @@ class Report(BaseModel):
             4,
         ),
         (
-            "from returns.result import Result\n"
+            "from qraft.result import Result\n"
             "from qraft.result import QraftError\n"
             "def read(value: Result[int, QraftError]) -> str:\n"
             "    return value.unwrap()\n",
-            "bad-return",
+            "missing-attribute",
             4,
         ),
         (
-            "from returns.result import Result\n"
-            "from qraft.result import QraftError\n"
-            "def read(value: Result[int, QraftError]) -> int:\n"
-            "    return value.unwrap()\n",
+            "from qraft.result import Err, Ok, QraftError, Result\n"
+            "def describe(value: Result[int, QraftError]) -> str:\n"
+            "    match value:\n"
+            "        case Ok(number):\n"
+            "            return str(number)\n"
+            "        case Err(error):\n"
+            "            return error.detail\n",
             "",
             0,
         ),
         (
-            "from returns.result import Result, Success\n"
-            "from qraft.result import QraftError\n"
-            "def stringify(value: int) -> str:\n"
-            "    return str(value)\n"
+            "from qraft.result import Err, Ok, QraftError, Result\n"
             "def convert(value: Result[int, QraftError]) -> Result[str, QraftError]:\n"
-            "    return value.map(stringify)\n",
+            "    match value:\n"
+            "        case Ok(number):\n"
+            "            return Ok(str(number))\n"
+            "        case Err() as error:\n"
+            "            return error\n",
             "",
             0,
         ),
         (
-            "from returns.result import Result, Success\n"
-            "from qraft.result import QraftError\n"
-            "def stringify(value: int) -> Result[str, QraftError]:\n"
-            "    return Success(str(value))\n"
-            "def convert(value: Result[int, QraftError]) -> Result[str, QraftError]:\n"
-            "    return value.bind(stringify)\n",
+            "from typing import assert_never\n"
+            "from qraft.result import Err, Ok, Result\n"
+            "def read(value: Result[tuple[int, int], str]) -> int:\n"
+            "    match value:\n"
+            "        case Ok(axes):\n"
+            "            first, second = axes\n"
+            "            return first + second\n"
+            "        case Err():\n"
+            "            return 0\n"
+            "        case _ as remaining:\n"
+            "            assert_never(remaining)\n",
             "",
             0,
         ),
         (
-            "from returns.result import Result\n"
-            "from qraft.result import QraftError\n"
-            "def stringify(value: int) -> str:\n"
-            "    return str(value)\n"
-            "def convert(value: Result[int, QraftError]) -> Result[int, QraftError]:\n"
-            "    return value.map(stringify)\n",
+            "from qraft.result import Err, Ok, Result\n"
+            "def read(value: Result[int, str]) -> str:\n"
+            "    match value:\n"
+            "        case Ok(number):\n"
+            "            return number\n"
+            "        case Err(error):\n"
+            "            return error\n",
             "bad-return",
-            6,
+            5,
+        ),
+        (
+            "from typing import assert_never\n"
+            "from qraft.result import Ok, Result\n"
+            "def read(value: Result[int, str]) -> int:\n"
+            "    match value:\n"
+            "        case Ok(number):\n"
+            "            return number\n"
+            "        case _ as remaining:\n"
+            "            assert_never(remaining)\n",
+            "bad-argument-type",
+            8,
+        ),
+        (
+            "from qraft.result import Result\n"
+            "def read(value: Result[int, str]) -> int:\n"
+            "    return value.value\n",
+            "missing-attribute",
+            3,
+        ),
+        (
+            "from qraft.result import Ok\nvalue = Ok(1)\nvalue.value = 2\n",
+            "read-only",
+            3,
+        ),
+        (
+            "from qraft.result import Err\n"
+            "value = Err('bad input')\n"
+            "value.error = 'changed'\n",
+            "read-only",
+            3,
         ),
         (
             'from qraft.domain import PerChannel\nvalue = PerChannel(axis="bad")\n',

@@ -37,9 +37,9 @@ def test_unsupported_layout(algorithm: Algorithm, problem: str) -> None:
     )
     graph = Graph(nodes=(node,), weights=weights)
     requirements = algorithm.requirements(node, graph)
-    assert requirements.failure().kind is FailureKind.UNSUPPORTED
+    assert expect_error(requirements, "").kind is FailureKind.UNSUPPORTED
     outcome = algorithm.plan(node, graph, Statistics(ranges={}, histograms={}))
-    assert outcome.failure().kind is FailureKind.UNSUPPORTED
+    assert expect_error(outcome, "").kind is FailureKind.UNSUPPORTED
 
 
 @pytest.mark.parametrize("value", [float("nan"), float("inf")])

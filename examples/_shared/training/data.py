@@ -7,12 +7,11 @@ from urllib.request import urlopen
 import numpy as np
 from numpy.typing import NDArray
 from pydantic import ConfigDict, TypeAdapter
-from returns.result import Failure, Result, Success
 from sklearn.datasets import load_wine
 
 from examples._shared.training.schema import Config, Dataset, Split, TaskKind, Tokens
 from qraft.domain import FloatArray
-from qraft.result import FailureKind, QraftError, failure, validate
+from qraft.result import Err, FailureKind, Ok, QraftError, Result, failure, validate
 
 TEXT_URL = (
     "https://raw.githubusercontent.com/karpathy/char-rnn/"
@@ -98,7 +97,7 @@ def text_windows(
             f"requested {count} windows, only {available} available",
         )
     offsets = np.linspace(start, end - length - 1, count, dtype=np.int64)
-    return Success(
+    return Ok(
         Split(
             inputs=np.stack([tokens[i : i + length] for i in offsets]),
             targets=np.stack([tokens[i + 1 : i + length + 1] for i in offsets]),
@@ -112,10 +111,10 @@ def shakespeare(
 ) -> Result[Dataset, QraftError]:
     """Fit vocabulary on training text; never train on calibration/evaluation spans."""
     match validate("Shakespeare data", lambda: cached_text(config.cache)):
-        case Failure() as error:
+        case Err() as error:
             return error
-        case _ as resolved:
-            text = resolved.unwrap()
+        case Ok(text):
+            pass
     first, second = int(len(text) * 0.8), int(len(text) * 0.9)
     labels = tuple(sorted(set(text[:first])))
     vocabulary = {char: i for i, char in enumerate(labels)}
@@ -129,18 +128,18 @@ def shakespeare(
     match text_windows(
         tokens, first, second, config.calibration_samples, config.sequence_length
     ):
-        case Failure() as error:
+        case Err() as error:
             return error
-        case _ as resolved:
-            calibration = resolved.unwrap()
+        case Ok(calibration):
+            pass
     match text_windows(
         tokens, second, len(tokens), config.evaluation_samples, config.sequence_length
     ):
-        case Failure() as error:
+        case Err() as error:
             return error
-        case _ as resolved:
-            evaluation = resolved.unwrap()
-    return Success(
+        case Ok(evaluation):
+            pass
+    return Ok(
         Dataset(
             kind=kind,
             train=Split(

@@ -13,7 +13,6 @@ import onnx
 import torch
 from pydantic import BaseModel, Field
 from pydantic_settings import CliApp
-from returns.result import Failure, Result, Success
 from rich.console import Console
 from rich.progress import Progress
 from torchvision import models
@@ -50,7 +49,7 @@ from qraft.backends.onnx import describe
 from qraft.backends.onnx.pipeline import quantize
 from qraft.calibration import Percentile, Samples
 from qraft.domain import FloatArray, Graph, Node
-from qraft.result import QraftError
+from qraft.result import Err, Ok, QraftError, Result
 from qraft.rules import Exclude, Rule, Rules
 
 
@@ -83,10 +82,10 @@ def run(config: Config) -> Result[SuiteReport, QraftError]:
         match quantized_variants(
             fp32, calibration_samples(calibration, loaded), config, progress
         ):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as outcome:
-                runners, scopes = outcome.unwrap()
+            case Ok(configured):
+                runners, scopes = configured
         runners[Method.TORCH] = TorchRunner(loaded.model)
         metrics, gallery = measure(
             runners,
@@ -115,7 +114,7 @@ def run(config: Config) -> Result[SuiteReport, QraftError]:
         models=(model_report,),
     )
     save_report(report)
-    return Success(report)
+    return Ok(report)
 
 
 class ConstantWeights(BaseModel, frozen=True):
@@ -230,10 +229,10 @@ def quantized_variants(
     graph.
     """
     match describe(fp32):
-        case Failure() as error:
+        case Err() as error:
             return error
-        case _ as outcome:
-            graph = outcome.unwrap()
+        case Ok(graph):
+            pass
     runners: dict[Method, Runner] = {
         Method.ONNX: OrtRunner(config.output / "onnx_fp32.onnx", config.threads)
     }
@@ -256,17 +255,17 @@ def quantized_variants(
                 histogram_bins=config.histogram_bins,
             )
         match outcome:
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _:
-                result = outcome.unwrap()
+            case Ok(result):
+                pass
         method = recipe.variant()
         path = config.output / f"{method.value}.onnx"
         onnx.save(result.model, path)
         save_plans(config.output / f"{method.value}.plan.json", result.plans)
         runners[method] = OrtRunner(path, config.threads)
         scopes[method] = coverage(graph, result.plans)
-    return Success((runners, scopes))
+    return Ok((runners, scopes))
 
 
 def main() -> None:

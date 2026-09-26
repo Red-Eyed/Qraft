@@ -5,10 +5,9 @@ from typing import Protocol, Self, runtime_checkable
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from returns.result import Failure, Result, Success
 
 from qraft.domain import Absent, FloatArray, InputArray, frozen_array
-from qraft.result import FailureKind, QraftError, failure, validate
+from qraft.result import Err, FailureKind, Ok, QraftError, Result, failure, validate
 
 Samples = Callable[[], Iterable[Mapping[str, InputArray]]]
 
@@ -138,7 +137,7 @@ class MinMax(BaseModel):
         self, stats: MinMaxStats, histogram: HistogramStats | Absent
     ) -> Result[MinMaxStats, QraftError]:
         """Preserve the observed interval."""
-        return Success(stats)
+        return Ok(stats)
 
 
 class Percentile(BaseModel):
@@ -162,7 +161,7 @@ class Percentile(BaseModel):
             case Absent(reason=reason):
                 return failure(FailureKind.INVALID_DATA, "percentile", reason)
         if self.percentile == 100:
-            return Success(stats)
+            return Ok(stats)
         cumulative = np.cumsum(histogram.counts)
         tail = (100 - self.percentile) / 200
         first = int(np.searchsorted(cumulative, cumulative[-1] * tail, side="right"))
@@ -234,13 +233,13 @@ def collect(
     outputs = tuple(dict.fromkeys(item.tensor for item in unique))
     stats: dict[Requirement, MinMaxStats] = {}
     if not unique:
-        return Success(stats)
+        return Ok(stats)
     for sample in samples():
         match evaluator.run(sample, outputs):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as resolved:
-                observed = resolved.unwrap()
+            case Ok(observed):
+                pass
         for item in unique:
             if item.tensor not in observed:
                 return failure(
@@ -249,22 +248,22 @@ def collect(
                     f"missing output {item.tensor}",
                 )
             match extrema(observed[item.tensor], item.axes):
-                case Failure() as error:
+                case Err() as error:
                     return error
-                case _ as resolved:
-                    current = resolved.unwrap()
+                case Ok(current):
+                    pass
             if item in stats:
                 match merge_extrema(stats[item], current):
-                    case Failure() as error:
+                    case Err() as error:
                         return error
-                    case _ as resolved:
-                        current = resolved.unwrap()
+                    case Ok(current):
+                        pass
             stats[item] = current
     if not stats:
         return failure(
             FailureKind.EMPTY, "calibration", "calibration source yielded no samples"
         )
-    return Success(stats)
+    return Ok(stats)
 
 
 def histogram_edges(
@@ -281,7 +280,7 @@ def histogram_edges(
     if low == high:
         padding = max(abs(low) * 1e-6, 1e-6)
         low, high = low - padding, high + padding
-    return Success(np.linspace(low, high, bins + 1, dtype=np.float64))
+    return Ok(np.linspace(low, high, bins + 1, dtype=np.float64))
 
 
 def histograms(
@@ -300,21 +299,20 @@ def histograms(
     edges: dict[Requirement, np.ndarray[tuple[int, ...], np.dtype[np.float64]]] = {}
     for item, bounds in ranges.items():
         match histogram_edges(bounds, bins):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as resolved:
-                value = resolved.unwrap()
+            case Ok(value):
                 edges[item] = value
     counts = {item: np.zeros(bins, dtype=np.int64) for item in ranges}
     if not ranges:
-        return Success({})
+        return Ok({})
     outputs = tuple(dict.fromkeys(item.tensor for item in ranges))
     for sample in samples():
         match evaluator.run(sample, outputs):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as resolved:
-                observed = resolved.unwrap()
+            case Ok(observed):
+                pass
         for item in ranges:
             if item.tensor not in observed:
                 return failure(
@@ -323,10 +321,9 @@ def histograms(
                     f"missing output {item.tensor}",
                 )
             match count_histogram(observed[item.tensor], edges[item]):
-                case Failure() as error:
+                case Err() as error:
                     return error
-                case _ as resolved:
-                    count = resolved.unwrap()
+                case Ok(count):
                     counts[item] += count
     return validate(
         "histogram",
@@ -343,9 +340,9 @@ def count_histogram(
 ) -> Result[np.ndarray[tuple[int, ...], np.dtype[np.int64]], QraftError]:
     """Count one batch, preserving why a replay cannot reuse its first-pass range."""
     match extrema(values, ()):
-        case Failure() as error:
+        case Err() as error:
             return error
-        case _:
+        case Ok():
             pass
     counts, _ = np.histogram(values, bins=edges)
     if int(counts.sum()) != values.size:
@@ -354,4 +351,4 @@ def count_histogram(
             "histogram",
             "replay data exceeded calibration range",
         )
-    return Success(np.asarray(counts, dtype=np.int64))
+    return Ok(np.asarray(counts, dtype=np.int64))

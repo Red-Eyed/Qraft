@@ -2,14 +2,13 @@
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
-from returns.result import Failure, Result, Success
 
 from qraft.algorithms.contracts import Needs, Statistics
 from qraft.calibration import Requirement, extrema
 from qraft.domain import Graph, Node
 from qraft.domain.layout import channel_axes
 from qraft.plan import QuantizationPlan, RescaleInput
-from qraft.result import FailureKind, QraftError, failure, validate
+from qraft.result import Err, FailureKind, Ok, QraftError, Result, failure, validate
 
 
 class SmoothQuant(BaseModel):
@@ -22,13 +21,12 @@ class SmoothQuant(BaseModel):
 
     def requirements(self, node: Node, graph: Graph) -> Result[Needs, QraftError]:
         """Request contraction-channel extrema or explain an unsupported layout."""
-        outcome = channel_axes(node, graph)
-        match outcome:
-            case Failure() as error:
+        match channel_axes(node, graph):
+            case Err() as error:
                 return error
-            case _ as resolved:
-                activation_axis, _ = resolved.unwrap()
-                return Success(
+            case Ok(axes):
+                activation_axis, _ = axes
+                return Ok(
                     Needs(
                         ranges=(
                             Requirement(tensor=node.inputs[0], axes=(activation_axis,)),
@@ -40,12 +38,11 @@ class SmoothQuant(BaseModel):
         self, node: Node, graph: Graph, stats: Statistics
     ) -> Result[QuantizationPlan, QraftError]:
         """Use identity scaling for dead channels and expose incompatible statistics."""
-        outcome = channel_axes(node, graph)
-        match outcome:
-            case Failure() as error:
+        match channel_axes(node, graph):
+            case Err() as error:
                 return error
-            case _ as resolved:
-                activation_axis, axis = resolved.unwrap()
+            case Ok(axes):
+                activation_axis, axis = axes
         request = Requirement(tensor=node.inputs[0], axes=(activation_axis,))
         if request not in stats.ranges:
             return failure(
@@ -55,10 +52,10 @@ class SmoothQuant(BaseModel):
             )
         observed = stats.ranges[request]
         match extrema(graph.weights[node.inputs[1]], (axis,)):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as resolved:
-                weights = resolved.unwrap()
+            case Ok(weights):
+                pass
         activation = np.maximum(
             np.abs(observed.minimum), np.abs(observed.maximum)
         ).astype(np.float64)

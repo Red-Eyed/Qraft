@@ -9,6 +9,6 @@ outputs are FP32. Samples are neither mutated nor retained.
 
 `evaluate` depends only on the evaluator protocol and streams reference/candidate
 outputs into aggregate MSE and maximum absolute error. It rejects shape mismatches
-and empty evaluation with `returns.result.Failure` carrying a `QraftError`.
+and empty evaluation with `qraft.result.Err` carrying a `QraftError`.
 Candidate time includes session construction; optimizations
 are disabled for activation observability, so this is not a deployment benchmark.

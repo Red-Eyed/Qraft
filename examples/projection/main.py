@@ -6,7 +6,6 @@ from importlib.metadata import version
 import onnx
 from onnx import ModelProto
 from pydantic_settings import CliApp
-from returns.result import Failure, Result, Success
 from rich.console import Console
 from rich.progress import Progress
 
@@ -19,7 +18,7 @@ from examples.projection.schema import Config, Report, Variant
 from qraft.backends.onnx import describe
 from qraft.backends.onnx.pipeline import quantize
 from qraft.config import PercentileConfig, QuantizationConfig
-from qraft.result import QraftError
+from qraft.result import Err, Ok, QraftError, Result
 from qraft.runtime import OnnxEvaluator, evaluate
 
 
@@ -33,10 +32,10 @@ def run(config: Config) -> Result[Report, QraftError]:
     with Progress(console=console, disable=config.quiet) as progress:
         for recipe in config.methods:
             match run_variant(model, recipe, config, progress):
-                case Failure() as error:
+                case Err() as error:
                     return error
-                case _ as resolved:
-                    variants.append(resolved.unwrap())
+                case Ok(variant):
+                    variants.append(variant)
     report = Report(
         created_at=datetime.now(UTC),
         qraft=version("qraft"),
@@ -45,7 +44,7 @@ def run(config: Config) -> Result[Report, QraftError]:
         variants=tuple(variants),
     )
     save(report)
-    return Success(report)
+    return Ok(report)
 
 
 def recipes(config: Config) -> dict[QuantizationMethod, QuantizationConfig]:
@@ -79,31 +78,31 @@ def run_variant(
             histogram_bins=config.histogram_bins,
         )
     match outcome:
-        case Failure() as error:
+        case Err() as error:
             return error
-        case _ as resolved:
-            result = resolved.unwrap()
+        case Ok(result):
+            pass
     graph = result.model
     match describe(model):
-        case Failure() as error:
+        case Err() as error:
             return error
-        case _ as resolved:
-            source_graph = resolved.unwrap()
+        case Ok(source_graph):
+            pass
     scope = coverage(source_graph, result.plans)
     progress.console.print(f"{recipe.value}: measuring held-out projection error")
     evaluation = sample_source(config.evaluation_seed, config.evaluation_samples)
     match evaluate(OnnxEvaluator(model), OnnxEvaluator(graph), evaluation, ("y",)):
-        case Failure() as error:
+        case Err() as error:
             return error
-        case _ as resolved:
-            metrics = resolved.unwrap()
+        case Ok(metrics):
+            pass
     artifact = config.output / f"{method.value}.onnx"
     onnx.save(graph, artifact)
     (config.output / f"{method.value}.coverage.json").write_text(
         scope.model_dump_json(indent=2)
     )
     save_plans(config.output / f"{method.value}.plan.json", result.plans)
-    return Success(
+    return Ok(
         Variant(
             method=method,
             artifact=artifact.relative_to(config.output),

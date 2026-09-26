@@ -955,14 +955,13 @@ wheels = [
 
 [[package]]
 name = "qraft"
-version = "0.5.9"
+version = "0.6.0"
 source = { editable = "." }
 dependencies = [
     { name = "numpy" },
     { name = "onnx" },
     { name = "onnxruntime" },
     { name = "pydantic" },
-    { name = "returns" },
 ]
 
 [package.dev-dependencies]
@@ -989,7 +988,6 @@ requires-dist = [
     { name = "onnx", specifier = ">=1.17" },
     { name = "onnxruntime", specifier = ">=1.20" },
     { name = "pydantic", specifier = ">=2" },
-    { name = "returns", specifier = ">=0.29,<0.30" },
 ]
 
 [package.metadata.requires-dev]
@@ -1008,18 +1006,6 @@ examples = [
     { name = "stackformers", specifier = ">=4.6,<4.7" },
     { name = "torch", specifier = ">=2.6" },
     { name = "torchvision", specifier = ">=0.21" },
-]
-
-[[package]]
-name = "returns"
-version = "0.29.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/29/e6/f5ada68dfb47e9c032683813f3cd9a810978d8ce541866d365076215906f/returns-0.29.0.tar.gz", hash = "sha256:fd9831594403229595dc705fee632a9be24a497df10aa3b9b72405d75d54e8ad", size = 106314, upload-time = "2026-08-02T08:36:26.976Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c2/b6/660f9724d574eee210ba89cc8fc2c41a5d960947bcea7d780847ce766e21/returns-0.29.0-py3-none-any.whl", hash = "sha256:db43c06d228f84b3d93c0418313c37c5ee4ecdb7a0f10326c24444f9baaf074c", size = 160951, upload-time = "2026-08-02T08:36:28.291Z" },
 ]
 
 [[package]]

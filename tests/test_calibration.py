@@ -6,7 +6,6 @@ from collections.abc import Iterable, Mapping
 import numpy as np
 import pytest
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
-from returns.result import Result, Success
 
 from qraft.algorithms.encoding import encode
 from qraft.calibration import (
@@ -26,7 +25,7 @@ from qraft.domain import (
     IntegerType,
     PerTensor,
 )
-from qraft.result import QraftError
+from qraft.result import Ok, QraftError, Result
 from tests.outcomes import expect_error, expect_ok
 
 
@@ -41,7 +40,7 @@ class IdentityEvaluator(BaseModel):
     ) -> Result[Mapping[str, FloatArray], QraftError]:
         """Return requested tensors without retaining them."""
         self.calls.append(outputs)
-        return Success(
+        return Ok(
             {name: np.asarray(sample[name], dtype=np.float32) for name in outputs}
         )
 

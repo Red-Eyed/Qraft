@@ -5,12 +5,11 @@ from types import MappingProxyType
 from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from returns.result import Result
 
 from qraft.calibration import HistogramStats, MinMaxStats, Requirement
 from qraft.domain import Graph, Node
 from qraft.plan import QuantizationPlan
-from qraft.result import QraftError
+from qraft.result import QraftError, Result
 
 
 class Needs(BaseModel):

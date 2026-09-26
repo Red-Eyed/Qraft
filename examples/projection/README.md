@@ -81,6 +81,6 @@ outcome = quantize(
 
 Model training, datasets, and HTML reports are demonstration scaffolding; Qraft
 needs the FP32 ONNX graph, a replayable input factory, and the selected stage rules.
-The result contains `model` and inspectable `plans`, or a typed `Failure` diagnostic.
+The result contains `model` and inspectable `plans`, or a typed `Err` diagnostic.
 
 [Back to the model × method matrix](../README.md).

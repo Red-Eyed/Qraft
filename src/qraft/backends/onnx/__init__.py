@@ -16,7 +16,6 @@ from onnx import (
     helper,
     numpy_helper,
 )
-from returns.result import Result
 
 from qraft.domain import (
     Encoding,
@@ -27,7 +26,7 @@ from qraft.domain import (
     PerTensor,
 )
 from qraft.plan import QuantizationPlan, QuantizeInput, RescaleInput
-from qraft.result import FailureKind, QraftError, failure, validate
+from qraft.result import FailureKind, QraftError, Result, failure, validate
 
 
 def admit[T](operation: str, call: Callable[[], T]) -> Result[T, QraftError]:

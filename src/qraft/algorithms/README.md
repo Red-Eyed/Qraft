@@ -55,7 +55,7 @@ plan = expect_ok(SmoothQuant(alpha=0.5).plan(node, graph, stats))
 ```
 
 `expect_ok` is a test assertion helper: it reports a failed Result with its
-structured diagnostic. Production callers handle `Failure` explicitly.
+structured diagnostic. Production callers handle `Err` explicitly.
 
 To test the whole decision stage from supplied statistics:
 
@@ -94,9 +94,9 @@ Implement `requirements(node, graph) -> Result[Needs, QraftError]` and
 algorithm in a new module and select it through `Rules[Algorithm]`. Neither the
 core nor shell switches on concrete algorithm types.
 
-Import `Result`, `Success`, and `Failure` from `returns.result`. Qraft supplies the
+Import the local `Result`, `Ok`, and `Err` from `qraft.result`. Qraft supplies the
 frozen Pydantic `QraftError` payload. Expected layout, data, and planning failures
-return `Failure`; constructor validation and unexpected plugin exceptions retain
+return `Err`; constructor validation and unexpected plugin exceptions retain
 their exception behavior.
 
 The current statistics contract supports extrema and histograms. Reconstruction

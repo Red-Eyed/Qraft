@@ -5,14 +5,13 @@ from collections.abc import Iterable, Mapping
 import numpy as np
 import pytest
 from pydantic import BaseModel, ConfigDict, Field
-from returns.result import Failure, Result, Success
 
 from qraft.algorithms import Algorithm, build_plan
 from qraft.algorithms.static import StaticW8A8
 from qraft.calibration import Percentile
 from qraft.domain import Absent, FloatArray, Graph, InputArray, Node
 from qraft.plan import QuantizeInput
-from qraft.result import FailureKind, QraftError
+from qraft.result import Err, FailureKind, Ok, QraftError, Result
 from qraft.rules import Exclude, Rules
 from tests.outcomes import expect_error, expect_ok
 
@@ -33,9 +32,9 @@ class RecordingEvaluator(BaseModel):
         self.calls.append(outputs)
         match self.error:
             case QraftError() as error:
-                return Failure(error)
+                return Err(error)
             case Absent():
-                return Success(
+                return Ok(
                     {
                         name: np.asarray(sample[name], dtype=np.float32)
                         for name in outputs
@@ -159,7 +158,7 @@ def test_execution_failure_stops_collection(
     evaluator = RecordingEvaluator(error=diagnostic)
     rules: Rules[Algorithm] = Rules(default=StaticW8A8(calibration=Percentile()))
     outcome = build_plan(graph, evaluator, source, rules)
-    assert outcome.failure() is diagnostic
+    assert expect_error(outcome, diagnostic.detail) is diagnostic
     assert source.passes == 1
     assert evaluator.calls == [("x",)]
 

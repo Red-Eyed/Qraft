@@ -2,14 +2,13 @@
 
 from onnx import ModelProto
 from pydantic import BaseModel, ConfigDict, Field
-from returns.result import Failure, Result, Success
 
 from qraft.algorithms.contracts import Algorithm
 from qraft.algorithms.shell import build_plan
 from qraft.backends.onnx import admit, describe, lower, normalize
 from qraft.calibration import Samples
 from qraft.plan import QuantizationPlan
-from qraft.result import QraftError
+from qraft.result import Err, Ok, QraftError, Result
 from qraft.rules import Rules
 from qraft.runtime import OnnxEvaluator
 
@@ -33,28 +32,27 @@ def quantize(
 ) -> Result[PipelineResult, QraftError]:
     """Plan each revision and return expected admission or planning failures."""
     match admit("ONNX validation", lambda: normalize(model)):
-        case Failure() as error:
+        case Err() as error:
             return error
-        case _ as resolved:
-            current = resolved.unwrap()
+        case Ok(current):
+            pass
     plans: list[QuantizationPlan] = []
     for rules in stages:
         match describe(current):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as resolved:
-                graph = resolved.unwrap()
+            case Ok(graph):
+                pass
         match build_plan(
             graph, OnnxEvaluator(current), samples, rules, histogram_bins=histogram_bins
         ):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as resolved:
-                plan = resolved.unwrap()
+            case Ok(plan):
+                pass
         match lower(current, plan):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as resolved:
-                current = resolved.unwrap()
+            case Ok(current):
                 plans.append(plan)
-    return Success(PipelineResult(model=current, plans=tuple(plans)))
+    return Ok(PipelineResult(model=current, plans=tuple(plans)))

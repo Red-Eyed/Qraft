@@ -1,5 +1,31 @@
 # Qraft development log
 
+## 2026-09-26 — Local result union and explicit matching
+
+Qraft 0.6.0 replaces the external result-container dependency with frozen generic
+`Ok[T]` and `Err[E]` dataclasses and the closed `Result[T, E]` union in
+`qraft.result`. They carry native payloads unchanged. Pydantic still validates
+external inputs and diagnostics; the containers add no parsing or copying.
+
+Library code, examples, test helpers, and documentation now match both variants
+explicitly. There are no success-by-default branches or unwrapping/composition
+methods. Imports and plugin return values must migrate to the local variants.
+Pyrefly verifies exhaustive matches and rejects accessing a successful value
+before narrowing. Tuple payloads are unpacked inside the `Ok` branch because
+nested tuple patterns do not establish exhaustiveness with the current checker.
+
+`Result` is for expected failures that callers can meaningfully handle, not every
+operation. Normal return values and exceptions remain appropriate where success
+is expected. Programming errors and broken invariants propagate as exceptions;
+only documented failures are translated at the boundary that expects them.
+
+Verification: Ruff, formatting, strict Pyrefly, and all 359 tests pass. Static
+cases cover payload types, immutable fields, missing variants, and unavailable
+unwrapping. Existing integration tests preserve numerical behavior and diagnostic
+identity. The parallel run emitted the previously recorded macOS native teardown
+error after passing assertions; the serial run completed without that message.
+The final pre-commit parallel gate also completed without the teardown message.
+
 ## 2026-09-26 — Initial quantization pipeline
 
 The initial design isolates algorithms from ONNX mutation and exposes quantization

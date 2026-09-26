@@ -12,10 +12,9 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from returns.result import Result, Success
 
 from qraft.domain import Encoding, FloatArray, frozen_array
-from qraft.result import FailureKind, QraftError, failure
+from qraft.result import FailureKind, Ok, QraftError, Result, failure
 
 
 class QuantizeInput(BaseModel):
@@ -89,7 +88,7 @@ class QuantizationPlan(BaseModel):
     def then(self, other: QuantizationPlan) -> Result[QuantizationPlan, QraftError]:
         """Combine patches or return a conflict without changing either source plan."""
         try:
-            return Success(
+            return Ok(
                 QuantizationPlan(
                     operations=self.operations + other.operations,
                     excluded=tuple(dict.fromkeys(self.excluded + other.excluded)),

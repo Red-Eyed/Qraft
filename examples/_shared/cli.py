@@ -6,9 +6,8 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 from pydantic import BaseModel
-from returns.result import Failure, Result
 
-from qraft.result import QraftError
+from qraft.result import Err, Ok, QraftError, Result
 
 
 def run_and_report[ConfigT, ReportT: BaseModel](
@@ -22,11 +21,11 @@ def run_and_report[ConfigT, ReportT: BaseModel](
     with redirect_stdout(sys.stderr):
         outcome = run(config)
     match outcome:
-        case Failure(error):
+        case Err(error):
             print(error.model_dump_json(indent=2), file=sys.stderr)
             sys.exit(1)
-        case _:
-            report = outcome.unwrap()
+        case Ok(report):
+            pass
     print(
         report.model_dump_json(indent=2)
         if json_output

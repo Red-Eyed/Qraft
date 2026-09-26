@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "qraft"
-version = "0.5.9"
+version = "0.6.0"
 description = "Composable post-training quantization with explicit plans"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"
 authors = [{name = "Vadym Stupakov", email = "vadim.stupakov@gmail.com"}]
-dependencies = ["numpy>=2", "onnx>=1.17", "onnxruntime>=1.20", "pydantic>=2", "returns>=0.29,<0.30"]
+dependencies = ["numpy>=2", "onnx>=1.17", "onnxruntime>=1.20", "pydantic>=2"]
 
 [dependency-groups]
 dev = [

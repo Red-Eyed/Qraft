@@ -61,11 +61,11 @@ from collections.abc import Iterator, Mapping
 
 import numpy as np
 import onnx
-from returns.result import Failure
 
 from qraft.backends.onnx.pipeline import quantize
 from qraft.config import QuantizationConfig
 from qraft.domain import InputArray
+from qraft.result import Err, Ok
 
 features = np.load("calibration.npy", mmap_mode="r")
 
@@ -79,10 +79,9 @@ def samples() -> Iterator[Mapping[str, InputArray]]:
 config = QuantizationConfig(smoothquant=True)
 outcome = quantize(onnx.load("model.onnx"), samples, config.stages())
 match outcome:
-    case Failure(error):
+    case Err(error):
         print(error.kind, error.operation, error.detail)
-    case _:
-        result = outcome.unwrap()
+    case Ok(result):
         onnx.save(result.model, "model_w8a8.onnx")
         # result.plans exposes every stage's quantization decisions.
 ```
@@ -90,6 +89,14 @@ match outcome:
 Use the exact input names and shapes from your exported model. Token inputs
 remain int64; feature inputs remain float32. The factory must replay the same
 representative inputs on each pass, with held-out data reserved for evaluation.
+
+Qraft 0.6 uses its own frozen `Ok[T] | Err[E]` union. Import `Ok`, `Err`, and
+`Result` from `qraft.result` and match the variants directly. Code and plugins
+using the previous external containers must update their imports and return
+values; there are no `unwrap`, `map`, or `bind` methods.
+Use results for expected failures callers can handle. Operations expected to
+succeed can return normal values and raise on failure; unexpected errors and
+broken invariants remain exceptions.
 
 Start with `QuantizationConfig()` for MinMax. Enable `smoothquant=True` to balance
 channels before fresh W8A8 calibration, or use `PercentileConfig` to clip outliers.

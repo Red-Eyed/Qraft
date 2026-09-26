@@ -1,7 +1,6 @@
 """Static W8A8 as an independently composable algorithm."""
 
 from pydantic import BaseModel, ConfigDict, Field
-from returns.result import Failure, Result, Success
 
 from qraft.algorithms.contracts import Needs, Statistics
 from qraft.algorithms.encoding import encode
@@ -9,7 +8,7 @@ from qraft.calibration import Calibration, MinMax, Requirement, extrema
 from qraft.domain import Absent, Graph, IntegerType, Node, PerChannel, PerTensor
 from qraft.domain.layout import weight_axis
 from qraft.plan import QuantizationPlan, QuantizeInput
-from qraft.result import FailureKind, QraftError, failure, validate
+from qraft.result import Err, FailureKind, Ok, QraftError, Result, failure, validate
 
 
 class StaticW8A8(BaseModel):
@@ -27,24 +26,24 @@ class StaticW8A8(BaseModel):
     def requirements(self, node: Node, graph: Graph) -> Result[Needs, QraftError]:
         """Declare statistics or return an unsupported-layout outcome."""
         match weight_axis(node, graph):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _:
+            case Ok():
                 pass
         request = Requirement(tensor=node.inputs[0])
         if self.calibration.needs_histogram:
-            return Success(Needs(histograms=(request,)))
-        return Success(Needs(ranges=(request,)))
+            return Ok(Needs(histograms=(request,)))
+        return Ok(Needs(ranges=(request,)))
 
     def plan(
         self, node: Node, graph: Graph, stats: Statistics
     ) -> Result[QuantizationPlan, QraftError]:
         """Produce consumer encodings, preserving expected planning failures."""
         match weight_axis(node, graph):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as resolved:
-                axis = resolved.unwrap()
+            case Ok(axis):
+                pass
         request = Requirement(tensor=node.inputs[0])
         if request not in stats.ranges:
             return failure(
@@ -56,15 +55,15 @@ class StaticW8A8(BaseModel):
             request, Absent(reason="histogram was not collected")
         )
         match self.calibration.interval(stats.ranges[request], histogram):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as resolved:
-                interval = resolved.unwrap()
+            case Ok(interval):
+                pass
         match extrema(graph.weights[node.inputs[1]], (axis,)):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as resolved:
-                weight_stats = resolved.unwrap()
+            case Ok(weight_stats):
+                pass
         return validate(
             node.name,
             lambda: QuantizationPlan(

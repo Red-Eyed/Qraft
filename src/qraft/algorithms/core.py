@@ -1,12 +1,11 @@
 """Pure rule selection and plan assembly from supplied graph statistics."""
 
 from pydantic import BaseModel, ConfigDict, Field
-from returns.result import Failure, Result, Success
 
 from qraft.algorithms.contracts import Algorithm, Needs, Statistics
 from qraft.domain import Graph, Node
 from qraft.plan import QuantizationPlan
-from qraft.result import QraftError
+from qraft.result import Err, Ok, QraftError, Result
 from qraft.rules import Exclude, Rules
 
 
@@ -52,10 +51,10 @@ def select_algorithms(
                 excluded.append(node.name)
             case algorithm:
                 match algorithm.requirements(node, graph):
-                    case Failure() as error:
+                    case Err() as error:
                         return error
-                    case _ as resolved:
-                        needs.append(resolved.unwrap())
+                    case Ok(requirement_needs):
+                        needs.append(requirement_needs)
                 selected.append(SelectedNode(node=node, algorithm=algorithm))
     ranges = tuple(
         dict.fromkeys(item for need in needs for item in need.ranges + need.histograms)
@@ -63,7 +62,7 @@ def select_algorithms(
     histograms = tuple(
         dict.fromkeys(item for need in needs for item in need.histograms)
     )
-    return Success(
+    return Ok(
         Selection(
             graph=graph,
             selected=tuple(selected),
@@ -84,13 +83,13 @@ def assemble_plan(
     result = QuantizationPlan(excluded=selection.excluded)
     for selected in selection.selected:
         match selected.algorithm.plan(selected.node, selection.graph, stats):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as resolved:
-                patch = resolved.unwrap()
+            case Ok(patch):
+                pass
         match result.then(patch):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as resolved:
-                result = resolved.unwrap()
-    return Success(result)
+            case Ok(result):
+                pass
+    return Ok(result)

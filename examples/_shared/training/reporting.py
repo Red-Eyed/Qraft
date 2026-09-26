@@ -5,7 +5,6 @@ from html import escape
 from pathlib import Path
 
 from pydantic import BaseModel, Field
-from returns.result import Failure, Result, Success
 
 from examples._shared.schema import Coverage, Method
 from examples._shared.training.measurement import Predictor, benchmark
@@ -19,7 +18,7 @@ from examples._shared.training.schema import (
     Variant,
 )
 from qraft.domain import InputArray
-from qraft.result import QraftError
+from qraft.result import Err, Ok, QraftError, Result
 
 
 def task_html(task: TaskReport) -> str:
@@ -159,10 +158,10 @@ def variant_reports(
     reports: list[Variant] = []
     for method, predict in predictors.items():
         match benchmark(predict, example, config):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as resolved:
-                latency = resolved.unwrap()
+            case Ok(latency):
+                pass
         path = artifact(directory, method)
         reports.append(
             Variant(
@@ -174,7 +173,7 @@ def variant_reports(
                 coverage=coverage[method],
             )
         )
-    return Success(tuple(reports))
+    return Ok(tuple(reports))
 
 
 def save_manifest(data: Dataset, directory: Path) -> None:

@@ -3,7 +3,6 @@
 import numpy as np
 import pytest
 from pydantic import BaseModel, ConfigDict, Field
-from returns.result import Failure, Result, Success
 
 from qraft.algorithms import (
     Algorithm,
@@ -17,7 +16,7 @@ from qraft.algorithms.static import StaticW8A8
 from qraft.calibration import HistogramStats, MinMaxStats, Percentile, Requirement
 from qraft.domain import Graph, Node
 from qraft.plan import QuantizationPlan, QuantizeInput
-from qraft.result import FailureKind, QraftError
+from qraft.result import Err, FailureKind, Ok, QraftError, Result
 from qraft.rules import ByName, Exclude, Rule, Rules
 from tests.outcomes import expect_error, expect_ok
 
@@ -153,13 +152,13 @@ class Reject(BaseModel):
 
     def requirements(self, node: Node, graph: Graph) -> Result[Needs, QraftError]:
         """Either admit without calibration or return the original admission failure."""
-        return Failure(self.error) if self.admission else Success(Needs())
+        return Err(self.error) if self.admission else Ok(Needs())
 
     def plan(
         self, node: Node, graph: Graph, stats: Statistics
     ) -> Result[QuantizationPlan, QraftError]:
         """Return the original planning failure without replacing its payload."""
-        return Failure(self.error)
+        return Err(self.error)
 
 
 @pytest.mark.parametrize("admission", [True, False], ids=["requirements", "planning"])
@@ -177,7 +176,7 @@ def test_plugin_failure_preserves_diagnostic(graph: Graph, admission: bool) -> N
         if admission
         else assemble_plan(expect_ok(selection), Statistics(ranges={}, histograms={}))
     )
-    assert outcome.failure() is diagnostic
+    assert expect_error(outcome, diagnostic.detail) is diagnostic
 
 
 def test_statistics_detach_mutable_mapping_inputs() -> None:

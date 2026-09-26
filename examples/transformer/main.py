@@ -14,7 +14,6 @@ import numpy as np
 import onnx
 import torch
 from pydantic_settings import CliApp
-from returns.result import Failure, Result, Success
 from rich.console import Console
 from rich.progress import Progress
 from torch import nn
@@ -37,7 +36,7 @@ from qraft.backends.onnx import describe
 from qraft.backends.onnx.pipeline import quantize
 from qraft.calibration import Percentile, Samples
 from qraft.domain import FloatArray, Graph, InputArray, Node
-from qraft.result import FailureKind, QraftError, failure, validate
+from qraft.result import Err, FailureKind, Ok, QraftError, Result, failure, validate
 from qraft.rules import Exclude, Rule, Rules
 from qraft.runtime import OnnxEvaluator
 
@@ -50,10 +49,10 @@ def run(config: Config) -> Result[Report, QraftError]:
     console = Console(stderr=True, quiet=config.quiet)
     with console.status("Preparing disjoint Tiny Shakespeare text spans"):
         match shakespeare(config, TaskKind.TRANSFORMER):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as outcome:
-                data = outcome.unwrap()
+            case Ok(data):
+                pass
     save_manifest(data, config.output)
     model = CharacterTransformer(len(data.labels))
     with Progress(console=console, disable=config.quiet) as progress:
@@ -67,15 +66,15 @@ def run(config: Config) -> Result[Report, QraftError]:
         with console.status("Exporting FP32 ONNX and checking output parity"):
             exported = export_onnx(model, example, config)
         match exported:
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as outcome:
-                fp32, export_error = outcome.unwrap()
+            case Ok(exported_model):
+                fp32, export_error = exported_model
         match quantized_variants(fp32, data, config, progress):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as outcome:
-                predictors, scopes = outcome.unwrap()
+            case Ok(configured):
+                predictors, scopes = configured
 
         def torch_predict(inputs: InputArray) -> Result[FloatArray, QraftError]:
             """Use eager Torch as an independent export/quantization reference."""
@@ -83,17 +82,17 @@ def run(config: Config) -> Result[Report, QraftError]:
 
         predictors[Method.TORCH] = torch_predict
         match measure(predictors, data, config, progress):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as outcome:
-                scores, demonstrations = outcome.unwrap()
+            case Ok(measurements):
+                scores, demonstrations = measurements
         match variant_reports(
             predictors, scores, scopes, example, config.output, config
         ):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as outcome:
-                variants = outcome.unwrap()
+            case Ok(variants):
+                pass
     task = TaskReport(
         task=TaskKind.TRANSFORMER,
         architecture="Global causal Transformer with RoPE, RMSNorm, and SwiGLU",
@@ -116,7 +115,7 @@ def run(config: Config) -> Result[Report, QraftError]:
         tasks=(task,),
     )
     save(report)
-    return Success(report)
+    return Ok(report)
 
 
 class ConstantWeights:
@@ -185,9 +184,11 @@ def onnx_predictor(model: onnx.ModelProto) -> Predictor:
 
     def predict(inputs: InputArray) -> Result[FloatArray, QraftError]:
         """Keep task predictions in native float32 arrays."""
-        return evaluator.run({"tokens": inputs}, ("logits",)).map(
-            lambda outputs: outputs["logits"]
-        )
+        match evaluator.run({"tokens": inputs}, ("logits",)):
+            case Err() as error:
+                return error
+            case Ok(outputs):
+                return Ok(outputs["logits"])
 
     return predict
 
@@ -212,10 +213,10 @@ def export_onnx(
     fp32 = onnx.load(path)
     onnx.checker.check_model(fp32)
     match onnx_predictor(fp32)(example):
-        case Failure() as error:
+        case Err() as error:
             return error
-        case _ as outcome:
-            actual = outcome.unwrap()
+        case Ok(actual):
+            pass
     expected = eager(model, example)
     if not np.allclose(actual, expected, rtol=1e-3, atol=1e-4):
         return failure(
@@ -223,7 +224,7 @@ def export_onnx(
             "export parity",
             "FP32 ONNX export changed model outputs",
         )
-    return Success((fp32, float(np.max(np.abs(actual - expected)))))
+    return Ok((fp32, float(np.max(np.abs(actual - expected)))))
 
 
 def quantized_variants(
@@ -231,10 +232,10 @@ def quantized_variants(
 ) -> Result[tuple[dict[Method, Predictor], dict[Method, Coverage]], QraftError]:
     """Start every selected method from FP32; SmoothQuant recollects after rescaling."""
     match describe(fp32):
-        case Failure() as error:
+        case Err() as error:
             return error
-        case _ as outcome:
-            graph = outcome.unwrap()
+        case Ok(graph):
+            pass
     predictors = {Method.ONNX: onnx_predictor(fp32)}
     scopes = {
         Method.ONNX: Coverage(eligible_nodes=0),
@@ -255,16 +256,16 @@ def quantized_variants(
                 histogram_bins=config.histogram_bins,
             )
         match outcome:
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _:
-                result = outcome.unwrap()
+            case Ok(result):
+                pass
         method = recipe.variant()
         onnx.save(result.model, config.output / f"{method.value}.onnx")
         save_plans(config.output / f"{method.value}.plan.json", result.plans)
         predictors[method] = onnx_predictor(result.model)
         scopes[method] = coverage(graph, result.plans)
-    return Success((predictors, scopes))
+    return Ok((predictors, scopes))
 
 
 def main() -> None:

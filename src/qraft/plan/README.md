@@ -10,6 +10,6 @@ operations, and mixed transform/quantization stages. The application lowers a
 transform stage before recalibrating the next revision. Plans do not contain I/O
 or backend objects, and must be applied to their original graph revision.
 
-`then` returns `returns.result.Success(plan)` or `Failure(QraftError(...))` with
+`then` returns `qraft.result.Ok(plan)` or `Err(QraftError(...))` with
 the `conflict` category. Direct plan constructors use normal Pydantic validation
 exceptions.

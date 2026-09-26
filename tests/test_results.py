@@ -7,8 +7,6 @@ from pathlib import Path
 import numpy as np
 import pytest
 from onnx import numpy_helper
-from returns.primitives.exceptions import UnwrapFailedError
-from returns.result import Failure, Result, Success
 
 from qraft.algorithms import Algorithm, Needs, Statistics, build_plan
 from qraft.algorithms.static import StaticW8A8
@@ -18,7 +16,7 @@ from qraft.calibration import Requirement, Samples, collect, extrema
 from qraft.config import supported
 from qraft.domain import FloatArray, Graph, InputArray, Node
 from qraft.plan import QuantizationPlan
-from qraft.result import FailureKind, QraftError, failure, validate
+from qraft.result import Err, FailureKind, Ok, QraftError, Result, failure, validate
 from qraft.rules import Rules
 from qraft.runtime import OnnxEvaluator, compare, evaluate
 from tests.conftest import OperatorCase
@@ -27,49 +25,47 @@ from tests.test_calibration import IdentityEvaluator
 
 
 @pytest.mark.parametrize("successful", [True, False])
-def test_returns_composition(successful: bool) -> None:
-    """Compose library containers and preserve diagnostics without running callbacks."""
+def test_result_match(successful: bool) -> None:
+    """Explicit matching preserves error identity and skips success-only work."""
     error = QraftError(
         kind=FailureKind.INVALID_DATA, operation="composition", detail="bad input"
     )
-    outcome: Result[int, QraftError] = Success(2) if successful else Failure(error)
+    outcome: Result[int, QraftError] = Ok(2) if successful else Err(error)
     visited: list[int] = []
 
-    def increment(value: int) -> int:
-        """Record success mapping so failure short-circuiting is observable."""
-        visited.append(value)
-        return value + 1
+    def transform(value: Result[int, QraftError]) -> Result[int, QraftError]:
+        """Transform only a successful integer; propagate the original error variant."""
+        match value:
+            case Ok(number):
+                visited.append(number)
+                return Ok((number + 1) * 2)
+            case Err() as rejected:
+                return rejected
 
-    def double(value: int) -> Result[int, QraftError]:
-        """Return another library result to exercise monadic composition."""
-        visited.append(value)
-        return Success(value * 2)
-
-    result = outcome.map(increment).bind(double)
+    result = transform(outcome)
     if successful:
-        assert result == Success(6)
-        assert visited == [2, 3]
+        assert result == Ok(6)
+        assert visited == [2]
     else:
-        assert result.failure() is error
+        assert result is outcome
+        assert expect_error(result, "bad input") is error
         assert visited == []
 
 
-def test_returns_unwrap_is_runtime_checked() -> None:
-    """Expose returns' actual unchecked unwrap behavior rather than a static promise."""
-    outcome = failure(FailureKind.INVALID_DATA, "unwrap", "bad input")
-    with pytest.raises(UnwrapFailedError):
-        outcome.unwrap()
+def test_result_preserves_native_payload() -> None:
+    """Wrapping a numerical payload must not copy, coerce, or freeze its storage."""
+    values = np.asarray([1, 2], dtype=np.float32)
+    outcome = Ok(values)
+    assert outcome.value is values
+    assert values.flags.writeable
 
 
-def test_returns_map_propagates_programming_error() -> None:
-    """Library composition must not convert arbitrary callback bugs to Qraft errors."""
-
-    def broken(value: int) -> int:
-        """Produce an unexpected callback error outside admission validation."""
-        raise TypeError(f"callback bug for {value}")
-
-    with pytest.raises(TypeError, match="callback bug"):
-        Success(1).map(broken)
+def test_failure_carries_validated_diagnostic() -> None:
+    """The failure factory builds an error variant with the original diagnostic."""
+    outcome = failure(FailureKind.INVALID_DATA, "admission", "bad input")
+    assert outcome.error.kind is FailureKind.INVALID_DATA
+    assert outcome.error.operation == "admission"
+    assert outcome.error.detail == "bad input"
 
 
 class RejectPlanning:
@@ -175,7 +171,7 @@ def test_missing_observed_output() -> None:
             self, sample: "Mapping[str, InputArray]", outputs: tuple[str, ...]
         ) -> "Result[Mapping[str, FloatArray], QraftError]":
             """Demonstrate the runtime obligation beyond protocol signature checking."""
-            return Success({})
+            return Ok({})
 
     expect_error(
         collect(MissingEvaluator(), lambda: iter(({},)), (Requirement(tensor="x"),)),

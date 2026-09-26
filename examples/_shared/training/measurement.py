@@ -5,7 +5,6 @@ from time import perf_counter
 
 import numpy as np
 from pydantic import BaseModel, Field
-from returns.result import Failure, Result, Success
 from rich.progress import Progress
 
 from examples._shared.schema import Latency, Method
@@ -18,7 +17,7 @@ from examples._shared.training.schema import (
     Tokens,
 )
 from qraft.domain import FloatArray, InputArray
-from qraft.result import QraftError
+from qraft.result import Err, Ok, QraftError, Result
 
 type Predictor = Callable[[InputArray], Result[FloatArray, QraftError]]
 
@@ -88,16 +87,15 @@ def continuation(
     generated: list[str] = []
     for _ in range(length):
         match predict(current):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as resolved:
-                logits = resolved.unwrap()
+            case Ok(logits):
                 index = int(np.argmax(logits[0, -1]))
         generated.append(labels[index])
         current = np.concatenate(
             (current[:, 1:], np.asarray([[index]], dtype=np.int64)), axis=1
         )
-    return Success("".join(generated))
+    return Ok("".join(generated))
 
 
 def demonstrate(
@@ -129,11 +127,11 @@ def demonstrate(
             match continuation(
                 predict, tokens, data.labels, config.continuation_length
             ):
-                case Failure() as error:
+                case Err() as error:
                     return error
-                case _ as resolved:
-                    generated = resolved.unwrap()
-    return Success(
+                case Ok(generated):
+                    pass
+    return Ok(
         Demonstration(
             identity=data.evaluation.identities[row],
             method=method,
@@ -162,10 +160,9 @@ def measure(
         outputs: dict[Method, FloatArray] = {}
         for method, predict in predictors.items():
             match predict(inputs):
-                case Failure() as error:
+                case Err() as error:
                     return error
-                case _ as resolved:
-                    output = resolved.unwrap()
+                case Ok(output):
                     outputs[method] = output
         for method, logits in outputs.items():
             totals[method].update(
@@ -178,14 +175,13 @@ def measure(
                 match demonstrate(
                     data, row, method, logits, predictors[method], config
                 ):
-                    case Failure() as error:
+                    case Err() as error:
                         return error
-                    case _ as resolved:
-                        demo = resolved.unwrap()
+                    case Ok(demo):
                         demonstrations.append(demo)
         progress.advance(task)
     progress.remove_task(task)
-    return Success(
+    return Ok(
         (
             {method: total.finish() for method, total in totals.items()},
             tuple(demonstrations),
@@ -201,13 +197,13 @@ def benchmark(
     for index in range(config.warmup + config.benchmark_runs):
         start = perf_counter()
         match predict(inputs):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _:
+            case Ok():
                 pass
         if index >= config.warmup:
             timings.append((perf_counter() - start) * 1000)
-    return Success(
+    return Ok(
         Latency(
             median_ms=float(np.median(timings)),
             p95_ms=float(np.percentile(timings, 95)),

@@ -16,12 +16,11 @@ from onnxruntime.capi.onnxruntime_pybind11_state import (
     RuntimeException,
 )
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
-from returns.result import Failure, Result, Success
 
 from qraft.backends.onnx import normalize
 from qraft.calibration import Evaluator, Samples
 from qraft.domain import FloatArray, InputArray
-from qraft.result import FailureKind, QraftError, failure, validate
+from qraft.result import Err, FailureKind, Ok, QraftError, Result, failure, validate
 
 _OUTPUT_ARRAYS = TypeAdapter(
     list[NDArray[np.generic]],
@@ -143,7 +142,7 @@ def compare(
             "evaluation outputs must be nonempty and finite",
         )
     difference = actual.astype(np.float64) - expected
-    return Success(
+    return Ok(
         OutputError(
             squared=float(np.sum(difference * difference)),
             maximum=float(np.max(np.abs(difference))),
@@ -168,16 +167,16 @@ def evaluate(
         return failure(FailureKind.EMPTY, "evaluation", "evaluation requires outputs")
     for sample in samples():
         match reference.run(sample, outputs):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as resolved:
-                expected = resolved.unwrap()
+            case Ok(expected):
+                pass
         start = perf_counter()
         match candidate.run(sample, outputs):
-            case Failure() as error:
+            case Err() as error:
                 return error
-            case _ as resolved:
-                actual = resolved.unwrap()
+            case Ok(actual):
+                pass
         seconds += perf_counter() - start
         for name in outputs:
             if name not in actual or name not in expected:
@@ -185,10 +184,9 @@ def evaluate(
                     FailureKind.INVALID_DATA, "evaluation", f"missing output {name}"
                 )
             match compare(actual[name], expected[name]):
-                case Failure() as error:
+                case Err() as error:
                     return error
-                case _ as resolved:
-                    error = resolved.unwrap()
+                case Ok(error):
                     squared += error.squared
                     maximum = max(maximum, error.maximum)
                     count += error.elements
@@ -197,7 +195,7 @@ def evaluate(
         return failure(
             FailureKind.EMPTY, "evaluation", "evaluation source yielded no values"
         )
-    return Success(
+    return Ok(
         Evaluation(
             mean_squared_error=squared / count,
             maximum_absolute_error=maximum,

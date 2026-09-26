@@ -10,7 +10,7 @@ nodes, with fresh names and edge-local weights. The input model is never mutated
 ONNX checking and shape inference run on the result. Unsupported metadata, axes,
 control-flow subgraphs, and overridable initializers fail explicitly.
 `load`, `describe`, and `lower` return `Result`; graph checking, inference, and I/O
-failures become `returns.result.Failure` carrying `QraftError` at this boundary.
+failures become `qraft.result.Err` carrying `QraftError` at this boundary.
 `normalize` is an explicit validator that
 retains exception semantics. Unselected mask constants can contain IEEE infinities;
 selected quantizable weights still require finite numerical statistics.

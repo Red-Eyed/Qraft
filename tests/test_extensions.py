@@ -4,13 +4,12 @@ from collections.abc import Mapping
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
-from returns.result import Result, Success
 
 from qraft.algorithms import Algorithm, Needs, Statistics, build_plan
 from qraft.calibration import MinMaxStats, Requirement
 from qraft.domain import Graph, Node
 from qraft.plan import QuantizationPlan
-from qraft.result import QraftError
+from qraft.result import Ok, QraftError, Result
 from qraft.rules import ByName, ByOperator, ByTensor, Exclude, Rule, Rules
 from tests.outcomes import expect_ok
 from tests.test_calibration import IdentityEvaluator
@@ -21,7 +20,7 @@ class ObserveOnly:
 
     def requirements(self, node: Node, graph: Graph) -> Result[Needs, QraftError]:
         """Request activation data through the common collection loop."""
-        return Success(Needs(ranges=(Requirement(tensor=node.inputs[0]),)))
+        return Ok(Needs(ranges=(Requirement(tensor=node.inputs[0]),)))
 
     def plan(
         self, node: Node, graph: Graph, stats: Statistics
@@ -29,7 +28,7 @@ class ObserveOnly:
         """Verify typed statistics are available without backend access."""
         observed: MinMaxStats = stats.ranges[Requirement(tensor=node.inputs[0])]
         assert float(observed.maximum) == 2
-        return Success(QuantizationPlan(excluded=(node.name,)))
+        return Ok(QuantizationPlan(excluded=(node.name,)))
 
 
 class AfterOperator(BaseModel):
