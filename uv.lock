@@ -955,13 +955,18 @@ wheels = [
 
 [[package]]
 name = "qraft"
-version = "0.6.0"
+version = "0.7.0"
 source = { editable = "." }
 dependencies = [
     { name = "numpy" },
     { name = "onnx" },
     { name = "onnxruntime" },
     { name = "pydantic" },
+]
+
+[package.optional-dependencies]
+qdrop = [
+    { name = "torch" },
 ]
 
 [package.dev-dependencies]
@@ -988,7 +993,9 @@ requires-dist = [
     { name = "onnx", specifier = ">=1.17" },
     { name = "onnxruntime", specifier = ">=1.20" },
     { name = "pydantic", specifier = ">=2" },
+    { name = "torch", marker = "extra == 'qdrop'", specifier = ">=2.6" },
 ]
+provides-extras = ["qdrop"]
 
 [package.metadata.requires-dev]
 dev = [

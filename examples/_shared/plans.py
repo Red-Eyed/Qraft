@@ -8,7 +8,13 @@ import numpy as np
 
 from examples._shared.schema import Coverage
 from qraft.domain import FloatArray, Graph, IntArray, PerChannel, PerTensor
-from qraft.plan import Operation, QuantizationPlan, QuantizeInput, RescaleInput
+from qraft.plan import (
+    Operation,
+    QuantizationPlan,
+    QuantizeConstant,
+    QuantizeInput,
+    RescaleInput,
+)
 
 
 class ArrayRecord(TypedDict):
@@ -54,10 +60,16 @@ class RescaleRecord(TypedDict):
     weight_axis: int
 
 
+class ConstantRecord(QuantizeRecord):
+    """Preserve the exact reconstructed integer codes alongside their encoding."""
+
+    values: ArrayRecord
+
+
 class PlanRecord(TypedDict):
     """Preserve stage operations and exclusions in the existing JSON format."""
 
-    operations: list[QuantizeRecord | RescaleRecord]
+    operations: list[QuantizeRecord | ConstantRecord | RescaleRecord]
     excluded: tuple[str, ...]
 
 
@@ -71,10 +83,15 @@ def array_record(array: FloatArray | IntArray) -> ArrayRecord:
     }
 
 
-def operation_record(operation: Operation) -> QuantizeRecord | RescaleRecord:
+def operation_record(
+    operation: Operation,
+) -> QuantizeRecord | ConstantRecord | RescaleRecord:
     """Serialize every supported operation without an untyped JSON fallback."""
     match operation:
-        case QuantizeInput(node=node, index=index, encoding=encoding):
+        case (
+            QuantizeInput(node=node, index=index, encoding=encoding)
+            | QuantizeConstant(node=node, index=index, encoding=encoding)
+        ):
             granularity: GranularityRecord | ChannelRecord
             match encoding.granularity:
                 case PerTensor():
@@ -83,7 +100,7 @@ def operation_record(operation: Operation) -> QuantizeRecord | RescaleRecord:
                     granularity = ChannelRecord(axis=axis)
                 case _:
                     assert_never(encoding.granularity)
-            return {
+            record: QuantizeRecord = {
                 "node": node,
                 "index": index,
                 "encoding": {
@@ -92,6 +109,16 @@ def operation_record(operation: Operation) -> QuantizeRecord | RescaleRecord:
                     "granularity": granularity,
                 },
             }
+            match operation:
+                case QuantizeConstant(values=values):
+                    return ConstantRecord(
+                        node=record["node"],
+                        index=record["index"],
+                        encoding=record["encoding"],
+                        values=array_record(values),
+                    )
+                case QuantizeInput():
+                    return record
         case RescaleInput():
             return {
                 "node": operation.node,
@@ -132,7 +159,7 @@ def coverage(graph: Graph, plans: tuple[QuantizationPlan, ...]) -> Coverage:
                     quantized.append(name)
                 case RescaleInput(node=name):
                     transformed.append(name)
-                case QuantizeInput():
+                case QuantizeInput() | QuantizeConstant():
                     pass
                 case _:
                     assert_never(operation)

@@ -99,5 +99,6 @@ frozen Pydantic `QraftError` payload. Expected layout, data, and planning failur
 return `Err`; constructor validation and unexpected plugin exceptions retain
 their exception behavior.
 
-The current statistics contract supports extrema and histograms. Reconstruction
-algorithms needing replay/reference-output services require a future extension.
+The statistics contract supports extrema and histograms. GPTQv2 and QDrop use a
+separate [reconstruction contract](../reconstruction/README.md) with paired replay;
+they do not add execution dependencies to this pure planning interface.

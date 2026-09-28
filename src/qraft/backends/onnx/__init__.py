@@ -25,7 +25,7 @@ from qraft.domain import (
     PerChannel,
     PerTensor,
 )
-from qraft.plan import QuantizationPlan, QuantizeInput, RescaleInput
+from qraft.plan import QuantizationPlan, QuantizeConstant, QuantizeInput, RescaleInput
 from qraft.result import FailureKind, QraftError, Result, failure, validate
 
 
@@ -181,6 +181,46 @@ def qdq(
     ]
 
 
+def quantized_constant(
+    model: ModelProto, node: NodeProto, operation: QuantizeConstant, names: Names
+) -> list[NodeProto]:
+    """Lower exact reconstructed codes without rewriting shared initializers."""
+    if operation.index >= len(node.input):
+        raise ValueError("constant plan refers to a missing input")
+    source = node.input[operation.index]
+    constants = {value.name: value for value in model.graph.initializer}
+    if source not in constants:
+        raise ValueError("reconstructed edge must have a constant initializer")
+    if tuple(constants[source].dims) != operation.values.shape:
+        raise ValueError("reconstructed constant shape differs from original")
+    validate_encoding(model, source, operation.encoding)
+    stem = names.new(f"{node.name}_input{operation.index}_reconstructed")
+    integer, scale, zero, output = (
+        names.new(stem + suffix) for suffix in ("_q", "_scale", "_zero", "_dq")
+    )
+    model.graph.initializer.extend(
+        [
+            numpy_helper.from_array(operation.values, integer),
+            numpy_helper.from_array(operation.encoding.scale, scale),
+            numpy_helper.from_array(operation.encoding.zero_point, zero),
+        ]
+    )
+    kwargs: AxisAttribute = {}
+    match operation.encoding.granularity:
+        case PerChannel(axis=axis):
+            kwargs["axis"] = axis
+    node.input[operation.index] = output
+    return [
+        helper.make_node(
+            "DequantizeLinear",
+            [integer, scale, zero],
+            [output],
+            name=names.new(stem + "_DQ"),
+            **kwargs,
+        )
+    ]
+
+
 def validate_encoding(model: ModelProto, tensor: str, encoding: Encoding) -> None:
     """Require FP32 and check a per-channel encoding against known dimensions."""
     metadata = {
@@ -301,6 +341,8 @@ def _lower(model: ModelProto, plan: QuantizationPlan) -> ModelProto:
             match operation:
                 case QuantizeInput():
                     rewritten.extend(qdq(result, node, operation, names))
+                case QuantizeConstant():
+                    rewritten.extend(quantized_constant(result, node, operation, names))
                 case RescaleInput():
                     rewritten.extend(rescale(result, node, operation, names))
                 case _:

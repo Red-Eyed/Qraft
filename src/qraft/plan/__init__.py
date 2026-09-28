@@ -14,6 +14,7 @@ from pydantic import (
 )
 
 from qraft.domain import Encoding, FloatArray, frozen_array
+from qraft.plan.constants import QuantizeConstant
 from qraft.result import FailureKind, Ok, QraftError, Result, failure
 
 
@@ -49,7 +50,7 @@ class RescaleInput(BaseModel):
         return scale
 
 
-type Operation = QuantizeInput | RescaleInput
+type Operation = QuantizeInput | QuantizeConstant | RescaleInput
 
 
 class QuantizationPlan(BaseModel):
@@ -68,7 +69,10 @@ class QuantizationPlan(BaseModel):
         transforms: set[str] = set()
         for operation in self.operations:
             match operation:
-                case QuantizeInput(node=node, index=index):
+                case (
+                    QuantizeInput(node=node, index=index)
+                    | QuantizeConstant(node=node, index=index)
+                ):
                     if index < 0 or (node, index) in keys:
                         raise ValueError("duplicate or invalid quantization edge")
                     keys.add((node, index))

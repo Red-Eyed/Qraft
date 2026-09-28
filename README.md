@@ -6,6 +6,12 @@ Turn an FP32 ONNX model into a W8A8 QDQ graph using representative calibration
 inputs, without retraining. Compare MinMax, Percentile, and SmoothQuant, choose
 different methods for different layers, and keep sensitive layers in floating point.
 
+Reconstruct weights with **GPTQv2** for matrix projections or **QDrop-based
+operator reconstruction** for CNNs. These methods use additional calibration
+computation and preserve exact integer decisions in exported plans. The
+[reconstruction guide](src/qraft/reconstruction/README.md) explains scope;
+`just example reconstruction` runs a held-out comparison.
+
 Qraft gives you the quantized model **and the decisions behind it**: selected
 layers, scales, zero points, exclusions, and channel transforms. Use those plans
 to understand a quality regression and decide what to change next.
@@ -123,13 +129,17 @@ encodings, per-tensor activations, and per-output-channel weights. Calibration
 streams samples and keeps bounded statistics; the current runtime uses CPU
 ONNX Runtime. SmoothQuant supports ungrouped Conv and matrix projections.
 
-QDQ insertion does not guarantee faster inference or smaller files: weight
-initializers, biases, and terminal outputs remain floating point. GPU calibration,
-weight-only quantization, MSE calibration, AdaRound, and SeqMSE are future work.
+QDQ insertion does not guarantee faster inference or smaller files. Static
+quantization retains floating-point weight initializers; reconstruction adds
+integer weights and dequantization while preserving original initializers.
+Biases and terminal outputs remain floating point. GPU calibration, packed
+low-bit export, weight-only quantization, and automatic reconstruction blocks
+remain future work.
 
 ## Go deeper
 
 - [Algorithm guide and numerical examples](src/qraft/algorithms/README.md)
+- [GPTQv2 and QDrop reconstruction](src/qraft/reconstruction/README.md)
 - [ONNX graph and lowering contracts](src/qraft/backends/onnx/README.md)
 - [Calibration and replay requirements](src/qraft/calibration/README.md)
 - [Runtime evaluation](src/qraft/runtime/README.md)
