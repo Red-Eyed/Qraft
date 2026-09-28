@@ -138,7 +138,7 @@ remain future work.
 
 ## Go deeper
 
-- [Algorithm guide and numerical examples](src/qraft/algorithms/README.md)
+- [Algorithm catalog, diagrams, and references](src/qraft/algorithms/README.md)
 - [GPTQv2 and QDrop reconstruction](src/qraft/reconstruction/README.md)
 - [ONNX graph and lowering contracts](src/qraft/backends/onnx/README.md)
 - [Calibration and replay requirements](src/qraft/calibration/README.md)

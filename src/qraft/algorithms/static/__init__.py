@@ -1,4 +1,4 @@
-"""Static W8A8 as an independently composable algorithm."""
+"""Static W8A8 planning; see README.md for intuition and affine-format references."""
 
 from pydantic import BaseModel, ConfigDict, Field
 

@@ -2,6 +2,7 @@
 
 Based on arXiv:2203.05740. This operator-level variant does not discover
 residual blocks or reproduce the paper's cached random minibatch schedule.
+See README.md for the QDrop, AdaRound, and LSQ references and a worked example.
 """
 
 from __future__ import annotations

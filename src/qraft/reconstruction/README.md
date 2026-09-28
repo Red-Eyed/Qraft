@@ -8,8 +8,8 @@ lowers each completed operator before calibrating the next one.
 
 | Method | Implementation | ONNX scope |
 | --- | --- | --- |
-| `GPTQv2` | NumPy implementation of asymmetric residual correction, Algorithm 1 of [arXiv:2504.02692v1](https://arxiv.org/html/2504.02692v1), with unblocked column updates | Constant rank-two MatMul weights; Gemm with `alpha=1`, including both transposes |
-| `QDrop` | Adaptive weight rounding, stochastic elementwise reference/quantized-input mixing, learned activation scale, annealed rounding regularization | The same matrix operators; explicit-padding Conv2d, including grouped/depthwise convolution |
+| [GPTQv2](gptqv2/README.md) | NumPy implementation of asymmetric residual correction, Algorithm 1 of [arXiv:2504.02692v1](https://arxiv.org/html/2504.02692v1), with unblocked column updates | Constant rank-two MatMul weights; Gemm with `alpha=1`, including both transposes |
+| [QDrop](qdrop/README.md) | Adaptive weight rounding, stochastic elementwise reference/quantized-input mixing, learned activation scale, annealed rounding regularization | The same matrix operators; explicit-padding Conv2d, including grouped/depthwise convolution |
 
 The upstream GPTQv2 repository now redirects to GPTAQ. This implementation targets
 the named paper revision, not subsequent GPTAQ changes.

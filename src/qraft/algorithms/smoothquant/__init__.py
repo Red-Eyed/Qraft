@@ -1,4 +1,4 @@
-"""Edge-local SmoothQuant transformations independent of ONNX."""
+"""Edge-local SmoothQuant; see README.md for the paper and a worked example."""
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field

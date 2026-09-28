@@ -44,8 +44,11 @@ Keep generated artifacts and downloaded data out of commits.
 The functional core consumes graph snapshots, rules, and statistics and returns
 plans. Algorithms and domain records have no ONNX execution or filesystem
 dependencies. `Algorithm.requirements` declares calibration needs;
-`Algorithm.plan` makes decisions from supplied statistics. New algorithms belong
-in their own modules and plug into `Rules[Algorithm]`.
+`Algorithm.plan` makes decisions from supplied statistics. Each algorithm belongs
+in its own package with a short `README.md` containing an intuitive explanation,
+numerical example, Mermaid diagram, limitations, and primary references.
+Planning algorithms plug into `Rules[Algorithm]`; reconstruction methods use
+`Rules[Reconstructor]` and their paired-replay contract.
 
 The shell invokes an injected `Evaluator` and a replayable `Samples` factory.
 Calibration streams samples and retains current activations plus bounded

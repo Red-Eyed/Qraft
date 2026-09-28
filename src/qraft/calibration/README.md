@@ -1,5 +1,15 @@
 # Calibration
 
+The interval policies live in their own packages:
+
+- [MinMax](minmax/README.md): preserve observed extrema.
+- [Percentile](percentile/README.md): clip equal mass from histogram tails.
+
+Each guide includes a worked example, diagram, and references. Shared records
+and protocols live in [`contracts.py`](contracts.py); collection and numerical
+reducers remain in [`__init__.py`](__init__.py). The package still exports the
+same public names, including `MinMax` and `Percentile`.
+
 `collect` deduplicates `Requirement(tensor=..., axes=...)` requests and streams
 samples through an injected `Evaluator`. Empty axes mean per-tensor reduction;
 retained axes request channelwise extrema. Changing retained dimensions is an error.

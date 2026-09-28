@@ -1,4 +1,4 @@
-"""GPTQv2 asymmetric calibration, following arXiv:2504.02692v1 Algorithm 1."""
+"""GPTQv2 asymmetric calibration; README.md links Algorithm 1 and its foundations."""
 
 from dataclasses import dataclass
 

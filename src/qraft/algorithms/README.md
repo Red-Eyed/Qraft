@@ -1,5 +1,21 @@
 # Algorithms: functional core and imperative shell
 
+## Algorithm guides
+
+Each method lives in its own package with a short explanation, worked example,
+Mermaid diagram, implementation limits, and primary references.
+
+| Method | What it chooses | Guide |
+| --- | --- | --- |
+| MinMax | Observed calibration bounds | [MinMax](../calibration/minmax/README.md) |
+| Percentile | A central histogram interval | [Percentile](../calibration/percentile/README.md) |
+| Static W8A8 | Fixed activation and weight grids | [Static W8A8](static/README.md) |
+| SmoothQuant | Equivalent channel rescaling | [SmoothQuant](smoothquant/README.md) |
+| GPTQv2 | Weight codes with upstream-error compensation | [GPTQv2](../reconstruction/gptqv2/README.md) |
+| QDrop-based reconstruction | Learned rounding and activation scale | [QDrop](../reconstruction/qdrop/README.md) |
+
+## Planning boundary
+
 An algorithm receives a graph snapshot and already collected statistics. It
 returns decisions: which input edges to quantize, their scales and zero points,
 or which channels to rescale. You can test those decisions without loading an
@@ -17,8 +33,8 @@ computation is preserved; a later stage recalibrates before quantization.
 | [`contracts.py`](contracts.py) | `Algorithm`, `Needs`, and owned read-only `Statistics` |
 | [`core.py`](core.py) | Pure `select_algorithms(graph, rules)` and `assemble_plan(selection, stats)` |
 | [`encoding.py`](encoding.py) | Pure affine scale and zero-point calculation |
-| [`static.py`](static.py) | Static W8A8 decisions from graph weights and supplied statistics |
-| [`smoothquant.py`](smoothquant.py) | Channel balancing decisions from graph weights and supplied statistics |
+| [`static/`](static/) | Static W8A8 decisions from graph weights and supplied statistics |
+| [`smoothquant/`](smoothquant/) | Channel balancing decisions from graph weights and supplied statistics |
 | [`shell.py`](shell.py) | `build_plan`: invoke calibration through an injected evaluator/sample factory |
 | [`../backends/onnx/pipeline.py`](../backends/onnx/pipeline.py) | Choose ORT execution, lower each revision, and calibrate subsequent stages |
 
@@ -91,7 +107,8 @@ tests and Torch export examples.
 
 Implement `requirements(node, graph) -> Result[Needs, QraftError]` and
 `plan(node, graph, stats) -> Result[QuantizationPlan, QraftError]`. Put the complete
-algorithm in a new module and select it through `Rules[Algorithm]`. Neither the
+algorithm in a new package with an explanatory `README.md` and select it through
+`Rules[Algorithm]`. Neither the
 core nor shell switches on concrete algorithm types.
 
 Import the local `Result`, `Ok`, and `Err` from `qraft.result`. Qraft supplies the
