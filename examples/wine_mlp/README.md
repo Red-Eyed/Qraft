@@ -1,5 +1,8 @@
 # Wine MLP × quantization methods
 
+Read [`main.py`](main.py) for the workflow. To run this example, use the
+commands below from the repository root.
+
 Three-class classification of real chemical measurements. This example measures cultivar accuracy and actual held-out class predictions.
 
 Start at [`run()` in main.py](main.py), then follow `export_onnx()` (for Torch
@@ -55,9 +58,9 @@ INT8 result.
 ## Compare columns
 
 ```sh
-just example wine_mlp
-just example wine_mlp --methods minmax,percentile
-just example wine_mlp --help
+uv run --locked --group examples -m examples.wine_mlp.main
+uv run --locked --group examples -m examples.wine_mlp.main --methods minmax,percentile
+uv run --locked --group examples -m examples.wine_mlp.main --help
 ```
 
 Omitting `--methods` runs all three columns. Reports go to

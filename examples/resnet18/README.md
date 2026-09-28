@@ -1,5 +1,8 @@
 # ResNet-18 × quantization methods
 
+Read [`main.py`](main.py) for the workflow. To run this example, use the
+commands below from the repository root.
+
 Pretrained residual image classification on Imagenette. This example measures ImageNet top-1/top-5 accuracy and before/after image predictions.
 
 Start at [`run()` in main.py](main.py), then follow `export_onnx()` (for Torch
@@ -54,9 +57,9 @@ INT8 result.
 ## Compare columns
 
 ```sh
-just example resnet18
-just example resnet18 --methods minmax,percentile
-just example resnet18 --help
+uv run --locked --group examples -m examples.resnet18.main
+uv run --locked --group examples -m examples.resnet18.main --methods minmax,percentile
+uv run --locked --group examples -m examples.resnet18.main --help
 ```
 
 Omitting `--methods` runs all three columns. Reports go to

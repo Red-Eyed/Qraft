@@ -1,5 +1,8 @@
 # EfficientNet-B0 × quantization methods
 
+Read [`main.py`](main.py) for the workflow. To run this example, use the
+commands below from the repository root.
+
 Pretrained image classification sensitive to calibration choices. This example measures ImageNet accuracy and calibration-related regressions.
 
 Start at [`run()` in main.py](main.py), then follow `export_onnx()` (for Torch
@@ -55,9 +58,9 @@ INT8 result.
 ## Compare columns
 
 ```sh
-just example efficientnet_b0
-just example efficientnet_b0 --methods minmax,percentile
-just example efficientnet_b0 --help
+uv run --locked --group examples -m examples.efficientnet_b0.main
+uv run --locked --group examples -m examples.efficientnet_b0.main --methods minmax,percentile
+uv run --locked --group examples -m examples.efficientnet_b0.main --help
 ```
 
 Omitting `--methods` runs all three columns. Reports go to

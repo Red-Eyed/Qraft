@@ -100,6 +100,5 @@ improvement on controlled cases, and compare ONNX execution with native numerica
 computation. They also cover ownership, memory retention, replay budgets,
 failure semantics, and sequential reference preservation.
 
-`just example reconstruction` provisions dependencies and writes a held-out
-comparison under `artifacts/reconstruction`. See the
-[example guide](../../../examples/reconstruction/README.md) for interpretation.
+The [reconstruction example](../../../examples/reconstruction/README.md)
+walks through a held-out comparison, with local run instructions and interpretation.

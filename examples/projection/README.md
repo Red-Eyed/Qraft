@@ -1,5 +1,8 @@
 # Small projection × quantization methods
 
+Read [`main.py`](main.py) for the workflow. To run this example, use the
+commands below from the repository root.
+
 Minimal deterministic ONNX MatMul without downloaded data. This example measures mean squared error and maximum absolute error.
 
 Start at [`run()` in main.py](main.py), then follow `run_variant()`, `sample_source()` in
@@ -53,9 +56,9 @@ INT8 result.
 ## Compare columns
 
 ```sh
-just example projection
-just example projection --methods minmax,percentile
-just example projection --help
+uv run --locked --group examples -m examples.projection.main
+uv run --locked --group examples -m examples.projection.main --methods minmax,percentile
+uv run --locked --group examples -m examples.projection.main --help
 ```
 
 Omitting `--methods` runs all three columns. Reports go to

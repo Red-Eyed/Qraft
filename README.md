@@ -10,7 +10,7 @@ Reconstruct weights with **GPTQv2** for matrix projections or **QDrop-based
 operator reconstruction** for CNNs. These methods use additional calibration
 computation and preserve exact integer decisions in exported plans. The
 [reconstruction guide](src/qraft/reconstruction/README.md) explains scope;
-`just example reconstruction` runs a held-out comparison.
+the [reconstruction example](examples/reconstruction/README.md) shows a held-out comparison.
 
 Qraft gives you the quantized model **and the decisions behind it**: selected
 layers, scales, zero points, exclusions, and channel transforms. Use those plans
@@ -20,29 +20,11 @@ Think **“craft, with Q for quantization.”**
 The informal **QRAFT** mnemonic stands for **Quantization, Rules, Algorithms,
 Functional core, and Transformations**.
 
-## Try a complete workflow
+## Read the examples
 
-From this checkout, run:
-
-```sh
-just example
-```
-
-This builds a small ONNX projection, compares all three quantization methods,
-and saves models, plans, and held-out error measurements to
-`artifacts/projection/index.html`. It needs no model or dataset downloads;
-uv provisions the pinned Python interpreter and locked dependencies automatically.
-
-For a Torch model, start with a causal Transformer:
-
-```sh
-just example transformer --methods minmax,percentile
-just example windowed_transformer --methods smoothquant
-```
-
-These examples train a small language model, export it to ONNX, calibrate it,
-and compare quantized predictions and perplexity against Torch and ONNX FP32.
-Each folder has a README and an explicit `main.py` you can adapt to your own task.
+Examples are source walkthroughs to read and adapt. Each folder has an explicit
+`main.py` and a README explaining the workflow, with local instructions if you
+want to run it.
 
 | Your task | Start here |
 | --- | --- |
@@ -54,8 +36,8 @@ Each folder has a README and an explicit `main.py` you can adapt to your own tas
 | Smallest API walkthrough | [ONNX projection](examples/projection/README.md) |
 
 Every model supports all three methods. Browse the
-**[models × quantization methods matrix](examples/README.md)** for commands
-and explanations, or use `just example <model> --help` to adjust budgets.
+**[models × quantization methods matrix](examples/README.md)** for explanations
+and links to the source walkthroughs.
 
 ## Quantize your model
 

@@ -10,7 +10,8 @@ and operator-level QDrop on the existing projection model. Use eight 16-row
 calibration batches (seed 11), eight held-out batches (seed 19), and 2,000 QDrop
 updates. Save exact integer plans and execute the exported ONNX graphs.
 
-Command: `just example reconstruction --json --quiet` (Qraft 0.7.0).
+Run configuration: default reconstruction comparison with `--json --quiet`
+(Qraft 0.7.0). Current run instructions are in [README.md](README.md).
 
 | Method | Held-out MSE | Maximum absolute error |
 | --- | ---: | ---: |

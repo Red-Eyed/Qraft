@@ -1,5 +1,8 @@
 # Character RNN × quantization methods
 
+Read [`main.py`](main.py) for the workflow. To run this example, use the
+commands below from the repository root.
+
 Secondary recurrent next-character prediction example. This example measures token accuracy, perplexity, and recurrent predictions.
 
 Start at [`run()` in main.py](main.py), then follow `export_onnx()` (for Torch
@@ -54,9 +57,9 @@ INT8 result.
 ## Compare columns
 
 ```sh
-just example character_rnn
-just example character_rnn --methods minmax,percentile
-just example character_rnn --help
+uv run --locked --group examples -m examples.character_rnn.main
+uv run --locked --group examples -m examples.character_rnn.main --methods minmax,percentile
+uv run --locked --group examples -m examples.character_rnn.main --help
 ```
 
 Omitting `--methods` runs all three columns. Reports go to

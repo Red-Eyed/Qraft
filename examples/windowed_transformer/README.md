@@ -1,5 +1,8 @@
 # Windowed causal Transformer × quantization methods
 
+Read [`main.py`](main.py) for the workflow. To run this example, use the
+commands below from the repository root.
+
 Tiny Shakespeare with a causal window of eight tokens. This example measures token accuracy, perplexity, and greedy continuations.
 
 Start at [`run()` in main.py](main.py), then follow `export_onnx()` (for Torch
@@ -54,9 +57,9 @@ INT8 result.
 ## Compare columns
 
 ```sh
-just example windowed_transformer
-just example windowed_transformer --methods minmax,percentile
-just example windowed_transformer --help
+uv run --locked --group examples -m examples.windowed_transformer.main
+uv run --locked --group examples -m examples.windowed_transformer.main --methods minmax,percentile
+uv run --locked --group examples -m examples.windowed_transformer.main --help
 ```
 
 Omitting `--methods` runs all three columns. Reports go to

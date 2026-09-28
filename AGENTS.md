@@ -30,11 +30,13 @@ just check                          # Ruff, formatting, strict Pyrefly, and all 
 just test                           # Full suite with pytest-xdist workers
 just test tests/test_ownership.py    # One regression module
 just test-algorithms                 # Numerical tests without parent ONNX fixtures
-just example                        # Projection demo without model/data downloads
-just example transformer --help      # Typed example CLI options
 just wheel                          # Build a wheel; never upload package artifacts
 uv run ruff format src examples tests # Apply Python formatting
 ```
+
+Examples are human-readable source walkthroughs; running them is optional.
+Keep run commands and options in each example’s own README, not in shared
+documentation or just recipes.
 
 Examples write graphs, JSON plans, and reports under `artifacts/` by default.
 Keep generated artifacts and downloaded data out of commits.

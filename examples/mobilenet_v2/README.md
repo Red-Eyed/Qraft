@@ -1,5 +1,8 @@
 # MobileNetV2 × quantization methods
 
+Read [`main.py`](main.py) for the workflow. To run this example, use the
+commands below from the repository root.
+
 Pretrained image classification with depthwise convolutions. This example measures ImageNet accuracy and changes in predicted classes.
 
 Start at [`run()` in main.py](main.py), then follow `export_onnx()` (for Torch
@@ -55,9 +58,9 @@ INT8 result.
 ## Compare columns
 
 ```sh
-just example mobilenet_v2
-just example mobilenet_v2 --methods minmax,percentile
-just example mobilenet_v2 --help
+uv run --locked --group examples -m examples.mobilenet_v2.main
+uv run --locked --group examples -m examples.mobilenet_v2.main --methods minmax,percentile
+uv run --locked --group examples -m examples.mobilenet_v2.main --help
 ```
 
 Omitting `--methods` runs all three columns. Reports go to

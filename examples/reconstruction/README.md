@@ -1,11 +1,14 @@
 # Reconstruction comparison
 
+Read [`main.py`](main.py) for the workflow. To run this example, use the
+commands below from the repository root.
+
 ```sh
-just example reconstruction
-just example reconstruction --qdrop-steps 100 --json --quiet
+uv run --locked --group examples -m examples.reconstruction.main
+uv run --locked --group examples -m examples.reconstruction.main --qdrop-steps 100 --json --quiet
 ```
 
-The recipe provisions locked dependencies and compares MinMax, Percentile,
+The command provisions locked dependencies and compares MinMax, Percentile,
 GPTQv2, and operator-level QDrop on the same deterministic FP32 projection.
 Every recipe starts from the original graph; calibration and evaluation use
 different seeds. The output directory is created automatically.

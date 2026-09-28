@@ -1,5 +1,8 @@
 # Global causal Transformer × quantization methods
 
+Read [`main.py`](main.py) for the workflow. To run this example, use the
+commands below from the repository root.
+
 Tiny Shakespeare next-character prediction. This example measures token accuracy, cross entropy, perplexity, and greedy continuations.
 
 Start at [`run()` in main.py](main.py), then follow `export_onnx()` (for Torch
@@ -55,9 +58,9 @@ INT8 result.
 ## Compare columns
 
 ```sh
-just example transformer
-just example transformer --methods minmax,percentile
-just example transformer --help
+uv run --locked --group examples -m examples.transformer.main
+uv run --locked --group examples -m examples.transformer.main --methods minmax,percentile
+uv run --locked --group examples -m examples.transformer.main --help
 ```
 
 Omitting `--methods` runs all three columns. Reports go to

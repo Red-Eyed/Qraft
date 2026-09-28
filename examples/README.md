@@ -7,20 +7,20 @@ intentionally explicit: you can read one example without following a shared runn
 
 | Model / task | MinMax | Percentile | SmoothQuant → MinMax |
 | --- | --- | --- | --- |
-| [Global causal Transformer](transformer/README.md) | [Read & run](transformer/README.md#minmax) | [Read & run](transformer/README.md#percentile) | [Read & run](transformer/README.md#smoothquant) |
-| [Windowed causal Transformer](windowed_transformer/README.md) | [Read & run](windowed_transformer/README.md#minmax) | [Read & run](windowed_transformer/README.md#percentile) | [Read & run](windowed_transformer/README.md#smoothquant) |
-| [Wine MLP](wine_mlp/README.md) | [Read & run](wine_mlp/README.md#minmax) | [Read & run](wine_mlp/README.md#percentile) | [Read & run](wine_mlp/README.md#smoothquant) |
-| [ResNet-18](resnet18/README.md) | [Read & run](resnet18/README.md#minmax) | [Read & run](resnet18/README.md#percentile) | [Read & run](resnet18/README.md#smoothquant) |
-| [MobileNetV2](mobilenet_v2/README.md) | [Read & run](mobilenet_v2/README.md#minmax) | [Read & run](mobilenet_v2/README.md#percentile) | [Read & run](mobilenet_v2/README.md#smoothquant) |
-| [EfficientNet-B0](efficientnet_b0/README.md) | [Read & run](efficientnet_b0/README.md#minmax) | [Read & run](efficientnet_b0/README.md#percentile) | [Read & run](efficientnet_b0/README.md#smoothquant) |
-| [Character RNN](character_rnn/README.md) | [Read & run](character_rnn/README.md#minmax) | [Read & run](character_rnn/README.md#percentile) | [Read & run](character_rnn/README.md#smoothquant) |
-| [Small projection](projection/README.md) | [Read & run](projection/README.md#minmax) | [Read & run](projection/README.md#percentile) | [Read & run](projection/README.md#smoothquant) |
+| [Global causal Transformer](transformer/README.md) | [Read](transformer/README.md#minmax) | [Read](transformer/README.md#percentile) | [Read](transformer/README.md#smoothquant) |
+| [Windowed causal Transformer](windowed_transformer/README.md) | [Read](windowed_transformer/README.md#minmax) | [Read](windowed_transformer/README.md#percentile) | [Read](windowed_transformer/README.md#smoothquant) |
+| [Wine MLP](wine_mlp/README.md) | [Read](wine_mlp/README.md#minmax) | [Read](wine_mlp/README.md#percentile) | [Read](wine_mlp/README.md#smoothquant) |
+| [ResNet-18](resnet18/README.md) | [Read](resnet18/README.md#minmax) | [Read](resnet18/README.md#percentile) | [Read](resnet18/README.md#smoothquant) |
+| [MobileNetV2](mobilenet_v2/README.md) | [Read](mobilenet_v2/README.md#minmax) | [Read](mobilenet_v2/README.md#percentile) | [Read](mobilenet_v2/README.md#smoothquant) |
+| [EfficientNet-B0](efficientnet_b0/README.md) | [Read](efficientnet_b0/README.md#minmax) | [Read](efficientnet_b0/README.md#percentile) | [Read](efficientnet_b0/README.md#smoothquant) |
+| [Character RNN](character_rnn/README.md) | [Read](character_rnn/README.md#minmax) | [Read](character_rnn/README.md#percentile) | [Read](character_rnn/README.md#smoothquant) |
+| [Small projection](projection/README.md) | [Read](projection/README.md#minmax) | [Read](projection/README.md#percentile) | [Read](projection/README.md#smoothquant) |
 
 The Transformer examples are the primary reading path. Start with
 [the projection](projection/README.md) if you want the smallest Qraft API example.
 The RNN is a secondary demonstration.
 
-## Read and run one example
+## Read one example
 
 Open its README, then read `run()` near the top of `main.py`. The same file contains
 the exporter, calibration factory, and quantization configurations. A local
@@ -28,24 +28,8 @@ the exporter, calibration factory, and quantization configurations. A local
 Downloads, minibatch training, metric accumulation, and HTML rendering are support
 helpers in [`_shared`](_shared/README.md).
 
-From the project root:
-
-```sh
-just example transformer --methods percentile
-just example transformer --methods minmax,percentile
-just example transformer
-```
-
-The last command compares all three methods. The direct command is:
-
-```sh
-uv run --locked --group examples -m examples.transformer.main --methods percentile
-```
-
-The entry point prepares its cache, directories, exports, and reports automatically.
-`--help` lists budgets, `--quiet` disables progress, and `--json` prints structured
-results while logs stay on stderr. Model identity belongs to the chosen folder;
-method selection changes the matrix columns that run.
+Running an example is optional. Commands and runtime options live in that
+example’s own README.
 
 ## What the method columns mean
 
