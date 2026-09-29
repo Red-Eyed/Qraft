@@ -1,48 +1,53 @@
 # Qraft
 
-**Post-training quantization you can inspect, tune, and measure.**
+**Post-training quantization experiments with decisions you can inspect.**
 
-Turn an FP32 ONNX model into a W8A8 QDQ graph using representative calibration
-inputs, without retraining. Compare MinMax, Percentile, and SmoothQuant, choose
-different methods for different layers, and keep sensitive layers in floating point.
+Qraft turns an FP32 ONNX model and representative inputs into a W8A8 QDQ graph.
+It also returns the plans behind that graph: which consumer edges were quantized,
+which layers were excluded, and which scales, zero points, or channel transforms
+were chosen. Use those decisions to investigate an accuracy drop, change one
+choice, and measure again on held-out data.
 
-Reconstruct weights with **GPTQv2** for matrix projections or **QDrop-based
-operator reconstruction** for CNNs. These methods use additional calibration
-computation and preserve exact integer decisions in exported plans. The
-[reconstruction guide](src/qraft/reconstruction/README.md) explains scope;
-the [reconstruction example](examples/reconstruction/README.md) shows a held-out comparison.
+The aim is a research workflow you can reproduce and modify:
 
-Qraft gives you the quantized model **and the decisions behind it**: selected
-layers, scales, zero points, exclusions, and channel transforms. Use those plans
-to understand a quality regression and decide what to change next.
+1. **Establish an FP32 baseline** with your exported ONNX model.
+2. **Replay representative calibration inputs** for MinMax, Percentile, or
+   SmoothQuant followed by fresh W8A8 calibration.
+3. **Inspect the stage plans** and use rules to select methods or exclude
+   sensitive layers.
+4. **Compare held-out results** across the baseline and quantized graphs.
 
-Think **“craft, with Q for quantization.”**
-The informal **QRAFT** mnemonic stands for **Quantization, Rules, Algorithms,
-Functional core, and Transformations**.
+Qraft also includes [GPTQv2 and operator-level QDrop-based reconstruction](src/qraft/reconstruction/README.md)
+for experiments that spend additional calibration computation on weight choices.
+The methods are documented with their assumptions, numerical examples, and
+implementation limits.
 
-## Read the examples
+## Start with an experiment
 
-Examples are source walkthroughs to read and adapt. Each folder has an explicit
-`main.py` and a README explaining the workflow, with local instructions if you
-want to run it.
+Each example is a readable source walkthrough with model export, calibration,
+method selection, and held-out evaluation in its own `main.py`. Its README has
+the commands to run it.
 
-| Your task | Start here |
+| Research question | Example |
 | --- | --- |
-| Global causal attention | [Transformer](examples/transformer/README.md) |
-| Local windowed attention | [Windowed Transformer](examples/windowed_transformer/README.md) |
-| Tabular classification | [Wine MLP](examples/wine_mlp/README.md) |
-| Pretrained image classification | [ResNet-18](examples/resnet18/README.md), [MobileNetV2](examples/mobilenet_v2/README.md), [EfficientNet-B0](examples/efficientnet_b0/README.md) |
-| Recurrent sequence model | [Character RNN](examples/character_rnn/README.md) |
-| Smallest API walkthrough | [ONNX projection](examples/projection/README.md) |
+| How do methods behave on global or local causal attention? | [Transformer](examples/transformer/README.md) · [Windowed Transformer](examples/windowed_transformer/README.md) |
+| How do activation outliers affect image classification? | [ResNet-18](examples/resnet18/README.md) · [MobileNetV2](examples/mobilenet_v2/README.md) · [EfficientNet-B0](examples/efficientnet_b0/README.md) |
+| What is the smallest complete API example? | [ONNX projection](examples/projection/README.md) |
+| How do the methods apply beyond those models? | [Wine MLP](examples/wine_mlp/README.md) · [Character RNN](examples/character_rnn/README.md) |
+| What does reconstruction change? | [Held-out reconstruction comparison](examples/reconstruction/README.md) |
 
-Every model supports all three methods. Browse the
-**[models × quantization methods matrix](examples/README.md)** for explanations
-and links to the source walkthroughs.
+The [models × quantization methods matrix](examples/README.md) links every
+MinMax, Percentile, and SmoothQuant walkthrough. These are experiments, including
+cases where quantization loses substantial accuracy. For example, a historical
+256-image [EfficientNet-B0 demonstration](examples/efficientnet_b0/README.md)
+measured 75.00% FP32 top-1, 44.92% with MinMax, and 69.53% with Percentile.
+Those subset results illustrate why calibration choice matters; they are not
+accuracy guarantees for other data.
 
-## Quantize your model
+## Quantize your ONNX model
 
-For an ONNX model with a float32 input named `features`, and representative
-calibration rows saved in `calibration.npy`:
+For a model with a float32 input named `features` and representative rows in
+`calibration.npy`:
 
 ```python
 from collections.abc import Iterator, Mapping
@@ -71,62 +76,46 @@ match outcome:
         print(error.kind, error.operation, error.detail)
     case Ok(result):
         onnx.save(result.model, "model_w8a8.onnx")
-        # result.plans exposes every stage's quantization decisions.
+        # result.plans records the decisions made at each stage.
 ```
 
-Use the exact input names and shapes from your exported model. Token inputs
-remain int64; feature inputs remain float32. The factory must replay the same
-representative inputs on each pass, with held-out data reserved for evaluation.
+Use the exact input names, shapes, and dtypes of your exported graph. The sample
+factory must replay the same inputs on each calibration pass; reserve different
+data for evaluation. `QuantizationConfig()` selects MinMax by default.
+`smoothquant=True` balances channels before collecting fresh quantization
+statistics. For histogram clipping, use `PercentileConfig`. To choose behavior
+per layer, compose [rules](src/qraft/rules/README.md) with `StaticW8A8`,
+`SmoothQuant`, and `Exclude`.
 
-Qraft 0.6 uses its own frozen `Ok[T] | Err[E]` union. Import `Ok`, `Err`, and
-`Result` from `qraft.result` and match the variants directly. Code and plugins
-using the previous external containers must update their imports and return
-values; there are no `unwrap`, `map`, or `bind` methods.
-Use results for expected failures callers can handle. Operations expected to
-succeed can return normal values and raise on failure; unexpected errors and
-broken invariants remain exceptions.
+## What you can inspect and change
 
-Start with `QuantizationConfig()` for MinMax. Enable `smoothquant=True` to balance
-channels before fresh W8A8 calibration, or use `PercentileConfig` to clip outliers.
-For per-layer control, compose [rules](src/qraft/rules/README.md) with
-`StaticW8A8`, `SmoothQuant`, and `Exclude`; the Transformer examples show concrete
-selectors that quantize constant-weight projections while keeping dynamic
-attention products in floating point.
+| Experiment control | Where to look |
+| --- | --- |
+| Calibration ranges and clipping | [MinMax and Percentile](src/qraft/algorithms/README.md) |
+| Channel balancing and per-layer decisions | [Algorithm guides](src/qraft/algorithms/README.md) · [Rules](src/qraft/rules/README.md) |
+| Weight reconstruction | [GPTQv2 and QDrop](src/qraft/reconstruction/README.md) |
+| Replaying inputs and collecting bounded statistics | [Calibration](src/qraft/calibration/README.md) |
+| ONNX graph validation and QDQ lowering | [ONNX backend](src/qraft/backends/onnx/README.md) |
 
-## Measure the tradeoff
+Plans expose the chosen encodings and exclusions; examples save graphs, plans,
+reports, and held-out predictions or output errors under `artifacts/`. Qraft
+streams calibration samples and retains bounded statistics rather than caching
+the full dataset. Its planning algorithms can also be tested from supplied
+statistics without executing ONNX.
 
-Calibration choices can change task quality substantially. In the
-[EfficientNet-B0 demonstration](examples/efficientnet_b0/README.md), a 256-image
-subset measured **75.00% FP32 top-1**, **44.92% with MinMax**, and **69.53% with
-Percentile**. This is a subset experiment, not an accuracy guarantee; the
-examples expose failures as well as successful approximations.
+## Scope and interpretation
 
-Reports include held-out task metrics or output errors, predictions, saved
-graphs, and stage plans. Compare methods on your own data before choosing one.
+Qraft currently targets FP32 ONNX graphs with constant-weight Conv, MatMul, and
+Gemm operators. It supports INT8 or UINT8 encodings, per-tensor activations,
+per-output-channel weights, and CPU ONNX Runtime calibration. SmoothQuant covers
+ungrouped Conv and matrix projections. Reconstruction has its own
+[operator-specific limits](src/qraft/reconstruction/README.md).
 
-## Current scope
+QDQ insertion does not by itself establish lower latency or smaller files.
+Static quantization retains floating-point weight initializers; reconstruction
+also retains unused originals. Biases and terminal outputs remain floating
+point. Measure accuracy, latency, and artifact size on your own workload before
+drawing conclusions. GPU calibration, packed low-bit export, weight-only
+quantization, and automatic reconstruction blocks are outside the current scope.
 
-Qraft supports FP32 ONNX graphs, constant-weight Conv/MatMul/Gemm, INT8 or UINT8
-encodings, per-tensor activations, and per-output-channel weights. Calibration
-streams samples and keeps bounded statistics; the current runtime uses CPU
-ONNX Runtime. SmoothQuant supports ungrouped Conv and matrix projections.
-
-QDQ insertion does not guarantee faster inference or smaller files. Static
-quantization retains floating-point weight initializers; reconstruction adds
-integer weights and dequantization while preserving original initializers.
-Biases and terminal outputs remain floating point. GPU calibration, packed
-low-bit export, weight-only quantization, and automatic reconstruction blocks
-remain future work.
-
-## Go deeper
-
-- [Algorithm catalog, diagrams, and references](src/qraft/algorithms/README.md)
-- [GPTQv2 and QDrop reconstruction](src/qraft/reconstruction/README.md)
-- [ONNX graph and lowering contracts](src/qraft/backends/onnx/README.md)
-- [Calibration and replay requirements](src/qraft/calibration/README.md)
-- [Runtime evaluation](src/qraft/runtime/README.md)
-- [Algorithm unit tests](tests/algorithms/README.md)
-
-`just check` runs Ruff, strict Pyrefly, and the full test suite.
-`just test` uses pytest-xdist; `just test-algorithms` runs the independent
-numerical tests. `just wheel` builds the package.
+Want to extend a method or reproduce a result? See [CONTRIBUTION.md](CONTRIBUTION.md).
