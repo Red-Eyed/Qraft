@@ -16,7 +16,7 @@ and its matching resize/crop/normalization transform. `export_onnx()` shows the
 actual `torch.onnx.export` call with input name `images` and output name `logits`.
 
 `calibration_samples()` reopens selected train images and applies exactly the
-checkpoint's inference preprocessing. `quantized_variants()` calls Qraft directly
+checkpoint's inference preprocessing. `quantized_variants()` calls QuantSmith directly
 for residual convolutions and the classifier. The gallery compares the same val
 images across Torch FP32, ONNX FP32, and the selected INT8 methods.
 
@@ -72,7 +72,7 @@ prints the report as JSON. Downloads and output setup are automatic.
 
 Replace the builder/checkpoint in `load_model()` and provide its exact inference preprocessing. Replace the image loader with your own train/calibration and held-out sources. Update category names and output-shape validation if your classifier does not have 1,000 logits.
 
-The Qraft boundary in the example is deliberately small:
+The QuantSmith boundary in the example is deliberately small:
 
 ```python
 outcome = quantize(
@@ -83,7 +83,7 @@ outcome = quantize(
 )
 ```
 
-Model training, datasets, and HTML reports are demonstration scaffolding; Qraft
+Model training, datasets, and HTML reports are demonstration scaffolding; QuantSmith
 needs the FP32 ONNX graph, a replayable input factory, and the selected stage rules.
 The result contains `model` and inspectable `plans`, or a typed `Err` diagnostic.
 

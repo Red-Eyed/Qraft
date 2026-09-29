@@ -3,12 +3,12 @@
 import numpy as np
 import pytest
 
-from qraft.algorithms import Needs, Statistics
-from qraft.algorithms.static import StaticW8A8
-from qraft.calibration import HistogramStats, MinMaxStats, Percentile, Requirement
-from qraft.domain import Graph, Node, PerChannel, PerTensor
-from qraft.plan import QuantizeInput
-from qraft.result import FailureKind
+from quantsmith.algorithms import Needs, Statistics
+from quantsmith.algorithms.static import StaticW8A8
+from quantsmith.calibration import HistogramStats, MinMaxStats, Percentile, Requirement
+from quantsmith.domain import Graph, Node, PerChannel, PerTensor
+from quantsmith.plan import QuantizeInput
+from quantsmith.result import FailureKind
 from tests.algorithms.cases import OperatorLayout, graph_for
 from tests.outcomes import expect_error, expect_ok
 

@@ -29,19 +29,27 @@ from examples._shared.training.schema import Dataset, Report, TaskKind, TaskRepo
 from examples._shared.training.training import eager, train
 from examples.character_rnn.model import CharacterRNN
 from examples.character_rnn.schema import Config
-from qraft.algorithms import Algorithm
-from qraft.algorithms.smoothquant import SmoothQuant
-from qraft.algorithms.static import StaticW8A8
-from qraft.backends.onnx import describe
-from qraft.backends.onnx.pipeline import quantize
-from qraft.calibration import Percentile, Samples
-from qraft.domain import FloatArray, Graph, InputArray, Node
-from qraft.result import Err, FailureKind, Ok, QraftError, Result, failure, validate
-from qraft.rules import Exclude, Rule, Rules
-from qraft.runtime import OnnxEvaluator
+from quantsmith.algorithms import Algorithm
+from quantsmith.algorithms.smoothquant import SmoothQuant
+from quantsmith.algorithms.static import StaticW8A8
+from quantsmith.backends.onnx import describe
+from quantsmith.backends.onnx.pipeline import quantize
+from quantsmith.calibration import Percentile, Samples
+from quantsmith.domain import FloatArray, Graph, InputArray, Node
+from quantsmith.result import (
+    Err,
+    FailureKind,
+    Ok,
+    QuantSmithError,
+    Result,
+    failure,
+    validate,
+)
+from quantsmith.rules import Exclude, Rule, Rules
+from quantsmith.runtime import OnnxEvaluator
 
 
-def run(config: Config) -> Result[Report, QraftError]:
+def run(config: Config) -> Result[Report, QuantSmithError]:
     """Execute the concrete model → ONNX → quantization → prediction workflow."""
     torch.set_num_threads(1)
     torch.manual_seed(config.seed)
@@ -76,7 +84,7 @@ def run(config: Config) -> Result[Report, QraftError]:
             case Ok(configured):
                 predictors, scopes = configured
 
-        def torch_predict(inputs: InputArray) -> Result[FloatArray, QraftError]:
+        def torch_predict(inputs: InputArray) -> Result[FloatArray, QuantSmithError]:
             """Use eager Torch as an independent export/quantization reference."""
             return validate("Torch prediction", lambda: eager(model, inputs))
 
@@ -136,7 +144,7 @@ class ConstantWeights:
 
 
 def recipes(config: Config) -> dict[QuantizationMethod, tuple[Rules[Algorithm], ...]]:
-    """Spell out the three Qraft configurations so they can be adapted independently."""
+    """Define three QuantSmith configurations for independent adaptation."""
     minmax: Rules[Algorithm] = Rules(
         default=Exclude(reason="outside constant-weight operators"),
         overrides=(Rule(selector=ConstantWeights(), decision=StaticW8A8()),),
@@ -185,7 +193,7 @@ def onnx_predictor(model: onnx.ModelProto) -> Predictor:
     """Bind one CPU session for logits; propagate expected execution failures."""
     evaluator = OnnxEvaluator(model)
 
-    def predict(inputs: InputArray) -> Result[FloatArray, QraftError]:
+    def predict(inputs: InputArray) -> Result[FloatArray, QuantSmithError]:
         """Keep task predictions in native float32 arrays."""
         match evaluator.run({"tokens": inputs}, ("logits",)):
             case Err() as error:
@@ -198,7 +206,7 @@ def onnx_predictor(model: onnx.ModelProto) -> Predictor:
 
 def export_onnx(
     model: nn.Module, example: InputArray, config: Config
-) -> Result[tuple[onnx.ModelProto, float], QraftError]:
+) -> Result[tuple[onnx.ModelProto, float], QuantSmithError]:
     """Export the FP32 model and reject output changes before quantization starts."""
     path = config.output / "onnx_fp32.onnx"
     with (config.output / "export.log").open("w") as log, redirect_stdout(log):
@@ -232,7 +240,7 @@ def export_onnx(
 
 def quantized_variants(
     fp32: onnx.ModelProto, data: Dataset, config: Config, progress: Progress
-) -> Result[tuple[dict[Method, Predictor], dict[Method, Coverage]], QraftError]:
+) -> Result[tuple[dict[Method, Predictor], dict[Method, Coverage]], QuantSmithError]:
     """Start every selected method from FP32; SmoothQuant recollects after rescaling."""
     match describe(fp32):
         case Err() as error:

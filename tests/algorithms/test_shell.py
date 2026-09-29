@@ -6,13 +6,13 @@ import numpy as np
 import pytest
 from pydantic import BaseModel, ConfigDict, Field
 
-from qraft.algorithms import Algorithm, build_plan
-from qraft.algorithms.static import StaticW8A8
-from qraft.calibration import Percentile
-from qraft.domain import Absent, FloatArray, Graph, InputArray, Node
-from qraft.plan import QuantizeInput
-from qraft.result import Err, FailureKind, Ok, QraftError, Result
-from qraft.rules import Exclude, Rules
+from quantsmith.algorithms import Algorithm, build_plan
+from quantsmith.algorithms.static import StaticW8A8
+from quantsmith.calibration import Percentile
+from quantsmith.domain import Absent, FloatArray, Graph, InputArray, Node
+from quantsmith.plan import QuantizeInput
+from quantsmith.result import Err, FailureKind, Ok, QuantSmithError, Result
+from quantsmith.rules import Exclude, Rules
 from tests.outcomes import expect_error, expect_ok
 
 
@@ -21,17 +21,17 @@ class RecordingEvaluator(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
     calls: list[tuple[str, ...]] = Field(default_factory=list)
-    error: QraftError | Absent = Field(
+    error: QuantSmithError | Absent = Field(
         default_factory=lambda: Absent(reason="execution succeeds")
     )
 
     def run(
         self, sample: Mapping[str, InputArray], outputs: tuple[str, ...]
-    ) -> Result[Mapping[str, FloatArray], QraftError]:
+    ) -> Result[Mapping[str, FloatArray], QuantSmithError]:
         """Return observations or the injected failure without executing a backend."""
         self.calls.append(outputs)
         match self.error:
-            case QraftError() as error:
+            case QuantSmithError() as error:
                 return Err(error)
             case Absent():
                 return Ok(
@@ -150,7 +150,7 @@ def test_execution_failure_stops_collection(
     graph: Graph, source: ReplayableSource
 ) -> None:
     """An execution failure propagates intact without replay or further batches."""
-    diagnostic = QraftError(
+    diagnostic = QuantSmithError(
         kind=FailureKind.EXECUTION,
         operation="test evaluator",
         detail="execution rejected",

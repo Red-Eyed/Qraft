@@ -9,7 +9,7 @@ from PIL import Image
 from torchvision.datasets import Imagenette
 
 from examples._shared.vision.schema import ImageRecord
-from qraft.domain import FloatArray
+from quantsmith.domain import FloatArray
 
 # The ten dataset labels must map back into the model's full ImageNet output space.
 IMAGENETTE_CLASSES: Mapping[str, str] = {

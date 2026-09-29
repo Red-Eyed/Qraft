@@ -15,14 +15,14 @@ from examples._shared.schema import QuantizationMethod
 from examples.projection.model import example_model, sample_source
 from examples.projection.reporting import save
 from examples.projection.schema import Config, Report, Variant
-from qraft.backends.onnx import describe
-from qraft.backends.onnx.pipeline import quantize
-from qraft.config import PercentileConfig, QuantizationConfig
-from qraft.result import Err, Ok, QraftError, Result
-from qraft.runtime import OnnxEvaluator, evaluate
+from quantsmith.backends.onnx import describe
+from quantsmith.backends.onnx.pipeline import quantize
+from quantsmith.config import PercentileConfig, QuantizationConfig
+from quantsmith.result import Err, Ok, QuantSmithError, Result
+from quantsmith.runtime import OnnxEvaluator, evaluate
 
 
-def run(config: Config) -> Result[Report, QraftError]:
+def run(config: Config) -> Result[Report, QuantSmithError]:
     """Persist the original graph and compare only the explicitly selected recipes."""
     config.output.mkdir(parents=True, exist_ok=True)
     model = example_model()
@@ -38,7 +38,7 @@ def run(config: Config) -> Result[Report, QraftError]:
                     variants.append(variant)
     report = Report(
         created_at=datetime.now(UTC),
-        qraft=version("qraft"),
+        quantsmith=version("quantsmith"),
         config=config,
         baseline=config.output / "onnx_fp32.onnx",
         variants=tuple(variants),
@@ -48,7 +48,7 @@ def run(config: Config) -> Result[Report, QraftError]:
 
 
 def recipes(config: Config) -> dict[QuantizationMethod, QuantizationConfig]:
-    """Expose the minimal Qraft configuration for each matrix column."""
+    """Expose the minimal QuantSmith configuration for each matrix column."""
     return {
         QuantizationMethod.MINMAX: QuantizationConfig(),
         QuantizationMethod.PERCENTILE: QuantizationConfig(
@@ -65,7 +65,7 @@ def run_variant(
     recipe: QuantizationMethod,
     config: Config,
     progress: Progress,
-) -> Result[Variant, QraftError]:
+) -> Result[Variant, QuantSmithError]:
     """Quantize from the FP32 source, evaluate held-out batches, and save coverage."""
     method = recipe.variant()
     calibration = sample_source(config.calibration_seed, config.calibration_samples)

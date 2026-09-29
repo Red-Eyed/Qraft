@@ -4,20 +4,20 @@ import numpy as np
 import pytest
 from pydantic import BaseModel, ConfigDict, Field
 
-from qraft.algorithms import (
+from quantsmith.algorithms import (
     Algorithm,
     Needs,
     Statistics,
     assemble_plan,
     select_algorithms,
 )
-from qraft.algorithms.smoothquant import SmoothQuant
-from qraft.algorithms.static import StaticW8A8
-from qraft.calibration import HistogramStats, MinMaxStats, Percentile, Requirement
-from qraft.domain import Graph, Node
-from qraft.plan import QuantizationPlan, QuantizeInput
-from qraft.result import Err, FailureKind, Ok, QraftError, Result
-from qraft.rules import ByName, Exclude, Rule, Rules
+from quantsmith.algorithms.smoothquant import SmoothQuant
+from quantsmith.algorithms.static import StaticW8A8
+from quantsmith.calibration import HistogramStats, MinMaxStats, Percentile, Requirement
+from quantsmith.domain import Graph, Node
+from quantsmith.plan import QuantizationPlan, QuantizeInput
+from quantsmith.result import Err, FailureKind, Ok, QuantSmithError, Result
+from quantsmith.rules import ByName, Exclude, Rule, Rules
 from tests.outcomes import expect_error, expect_ok
 
 
@@ -148,15 +148,15 @@ class Reject(BaseModel):
 
     model_config = ConfigDict(frozen=True, strict=True)
     admission: bool = Field()
-    error: QraftError = Field()
+    error: QuantSmithError = Field()
 
-    def requirements(self, node: Node, graph: Graph) -> Result[Needs, QraftError]:
+    def requirements(self, node: Node, graph: Graph) -> Result[Needs, QuantSmithError]:
         """Either admit without calibration or return the original admission failure."""
         return Err(self.error) if self.admission else Ok(Needs())
 
     def plan(
         self, node: Node, graph: Graph, stats: Statistics
-    ) -> Result[QuantizationPlan, QraftError]:
+    ) -> Result[QuantizationPlan, QuantSmithError]:
         """Return the original planning failure without replacing its payload."""
         return Err(self.error)
 
@@ -164,7 +164,7 @@ class Reject(BaseModel):
 @pytest.mark.parametrize("admission", [True, False], ids=["requirements", "planning"])
 def test_plugin_failure_preserves_diagnostic(graph: Graph, admission: bool) -> None:
     """Pure selection and assembly propagate external Result failures unchanged."""
-    diagnostic = QraftError(
+    diagnostic = QuantSmithError(
         kind=FailureKind.UNSUPPORTED, operation="external", detail="plugin declined"
     )
     rules: Rules[Algorithm] = Rules(

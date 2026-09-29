@@ -6,10 +6,10 @@ import numpy as np
 import pytest
 from pydantic import ValidationError
 
-from qraft.algorithms.contracts import Statistics
-from qraft.calibration import HistogramStats, MinMaxStats, Requirement
-from qraft.domain import Encoding, FloatArray, Graph, Node, PerChannel
-from qraft.plan import RescaleInput
+from quantsmith.algorithms.contracts import Statistics
+from quantsmith.calibration import HistogramStats, MinMaxStats, Requirement
+from quantsmith.domain import Encoding, FloatArray, Graph, Node, PerChannel
+from quantsmith.plan import RescaleInput
 
 
 @pytest.fixture

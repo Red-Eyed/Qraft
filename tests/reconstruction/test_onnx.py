@@ -8,19 +8,19 @@ import pytest
 import torch
 from onnx import ModelProto, TensorProto, helper, numpy_helper
 
-from qraft.backends.onnx import lower
-from qraft.backends.onnx.reconstruction import reconstruct
-from qraft.calibration import Samples
-from qraft.config import QuantizationConfig
-from qraft.domain import Encoding, FloatArray, PerChannel
-from qraft.plan import QuantizationPlan, QuantizeConstant, QuantizeInput
-from qraft.reconstruction import Problem, Reconstructor, Replay, Solution
-from qraft.reconstruction.affine import quantize, restore
-from qraft.reconstruction.gptqv2 import GPTQv2
-from qraft.reconstruction.qdrop import QDrop, array, forward
-from qraft.result import Err, FailureKind, QraftError, Result
-from qraft.rules import ByName, Exclude, Rule, Rules
-from qraft.runtime import OnnxEvaluator
+from quantsmith.backends.onnx import lower
+from quantsmith.backends.onnx.reconstruction import reconstruct
+from quantsmith.calibration import Samples
+from quantsmith.config import QuantizationConfig
+from quantsmith.domain import Encoding, FloatArray, PerChannel
+from quantsmith.plan import QuantizationPlan, QuantizeConstant, QuantizeInput
+from quantsmith.reconstruction import Problem, Reconstructor, Replay, Solution
+from quantsmith.reconstruction.affine import quantize, restore
+from quantsmith.reconstruction.gptqv2 import GPTQv2
+from quantsmith.reconstruction.qdrop import QDrop, array, forward
+from quantsmith.result import Err, FailureKind, QuantSmithError, Result
+from quantsmith.rules import ByName, Exclude, Rule, Rules
+from quantsmith.runtime import OnnxEvaluator
 from tests.conftest import OperatorCase
 from tests.outcomes import expect_ok
 
@@ -43,8 +43,8 @@ def test_operator_export(
     assert operator_case.model.SerializeToString() == original
     sample = next(iter(samples()))
     actual = expect_ok(OnnxEvaluator(result.model).run(sample, ("y",)))["y"]
-    from qraft.backends.onnx import describe
-    from qraft.backends.onnx.reconstruction import input_layout, operator
+    from quantsmith.backends.onnx import describe
+    from quantsmith.backends.onnx.reconstruction import input_layout, operator
 
     graph = expect_ok(describe(operator_case.model))
     node = graph.nodes[0]
@@ -109,7 +109,7 @@ class RecordingMethod:
 
     def reconstruct(
         self, problem: Problem, replay: Replay
-    ) -> Result[Solution, QraftError]:
+    ) -> Result[Solution, QuantSmithError]:
         """Inspect one paired batch, then delegate to the real numerical method."""
         batch = expect_ok(next(iter(replay())))
         self.differences.append(
@@ -241,8 +241,8 @@ def test_grouped_convolution_export(
     convolution: ModelProto, convolution_samples: Samples
 ) -> None:
     """Verify reconstructed grouped Conv2d and its unchanged bias against ORT."""
-    from qraft.backends.onnx import describe
-    from qraft.backends.onnx.reconstruction import operator
+    from quantsmith.backends.onnx import describe
+    from quantsmith.backends.onnx.reconstruction import operator
 
     rules: Rules[Reconstructor] = Rules(default=QDrop(steps=3))
     result = expect_ok(reconstruct(convolution, convolution_samples, rules))

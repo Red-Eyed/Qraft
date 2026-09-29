@@ -1,8 +1,8 @@
-# Qraft
+# QuantSmith
 
 **Post-training quantization experiments with decisions you can inspect.**
 
-Qraft turns an FP32 ONNX model and representative inputs into a W8A8 QDQ graph.
+QuantSmith turns an FP32 ONNX model and representative inputs into a W8A8 QDQ graph.
 It also returns the plans behind that graph: which consumer edges were quantized,
 which layers were excluded, and which scales, zero points, or channel transforms
 were chosen. Use those decisions to investigate an accuracy drop, change one
@@ -17,10 +17,18 @@ The aim is a research workflow you can reproduce and modify:
    sensitive layers.
 4. **Compare held-out results** across the baseline and quantized graphs.
 
-Qraft also includes [GPTQv2 and operator-level QDrop-based reconstruction](src/qraft/reconstruction/README.md)
+QuantSmith also includes [GPTQv2 and operator-level QDrop-based reconstruction](src/quantsmith/reconstruction/README.md)
 for experiments that spend additional calibration computation on weight choices.
 The methods are documented with their assumptions, numerical examples, and
 implementation limits.
+
+## Package name
+
+Version 0.8.0 changes the distribution and Python import name from `qraft` to
+`quantsmith`. Replace `qraft` imports with `quantsmith` and `QraftError` with
+`QuantSmithError`. The `qraft` package on PyPI belongs to an unrelated project.
+Example report metadata now uses the `quantsmith` field, and example environment
+variables use the `QUANTSMITH_` prefix.
 
 ## Start with an experiment
 
@@ -55,10 +63,10 @@ from collections.abc import Iterator, Mapping
 import numpy as np
 import onnx
 
-from qraft.backends.onnx.pipeline import quantize
-from qraft.config import QuantizationConfig
-from qraft.domain import InputArray
-from qraft.result import Err, Ok
+from quantsmith.backends.onnx.pipeline import quantize
+from quantsmith.config import QuantizationConfig
+from quantsmith.domain import InputArray
+from quantsmith.result import Err, Ok
 
 features = np.load("calibration.npy", mmap_mode="r")
 
@@ -84,32 +92,32 @@ factory must replay the same inputs on each calibration pass; reserve different
 data for evaluation. `QuantizationConfig()` selects MinMax by default.
 `smoothquant=True` balances channels before collecting fresh quantization
 statistics. For histogram clipping, use `PercentileConfig`. To choose behavior
-per layer, compose [rules](src/qraft/rules/README.md) with `StaticW8A8`,
+per layer, compose [rules](src/quantsmith/rules/README.md) with `StaticW8A8`,
 `SmoothQuant`, and `Exclude`.
 
 ## What you can inspect and change
 
 | Experiment control | Where to look |
 | --- | --- |
-| Calibration ranges and clipping | [MinMax and Percentile](src/qraft/algorithms/README.md) |
-| Channel balancing and per-layer decisions | [Algorithm guides](src/qraft/algorithms/README.md) · [Rules](src/qraft/rules/README.md) |
-| Weight reconstruction | [GPTQv2 and QDrop](src/qraft/reconstruction/README.md) |
-| Replaying inputs and collecting bounded statistics | [Calibration](src/qraft/calibration/README.md) |
-| ONNX graph validation and QDQ lowering | [ONNX backend](src/qraft/backends/onnx/README.md) |
+| Calibration ranges and clipping | [MinMax and Percentile](src/quantsmith/algorithms/README.md) |
+| Channel balancing and per-layer decisions | [Algorithm guides](src/quantsmith/algorithms/README.md) · [Rules](src/quantsmith/rules/README.md) |
+| Weight reconstruction | [GPTQv2 and QDrop](src/quantsmith/reconstruction/README.md) |
+| Replaying inputs and collecting bounded statistics | [Calibration](src/quantsmith/calibration/README.md) |
+| ONNX graph validation and QDQ lowering | [ONNX backend](src/quantsmith/backends/onnx/README.md) |
 
 Plans expose the chosen encodings and exclusions; examples save graphs, plans,
-reports, and held-out predictions or output errors under `artifacts/`. Qraft
+reports, and held-out predictions or output errors under `artifacts/`. QuantSmith
 streams calibration samples and retains bounded statistics rather than caching
 the full dataset. Its planning algorithms can also be tested from supplied
 statistics without executing ONNX.
 
 ## Scope and interpretation
 
-Qraft currently targets FP32 ONNX graphs with constant-weight Conv, MatMul, and
+QuantSmith currently targets FP32 ONNX graphs with constant-weight Conv, MatMul, and
 Gemm operators. It supports INT8 or UINT8 encodings, per-tensor activations,
 per-output-channel weights, and CPU ONNX Runtime calibration. SmoothQuant covers
 ungrouped Conv and matrix projections. Reconstruction has its own
-[operator-specific limits](src/qraft/reconstruction/README.md).
+[operator-specific limits](src/quantsmith/reconstruction/README.md).
 
 QDQ insertion does not by itself establish lower latency or smaller files.
 Static quantization retains floating-point weight initializers; reconstruction

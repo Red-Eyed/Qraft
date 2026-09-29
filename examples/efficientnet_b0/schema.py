@@ -13,7 +13,7 @@ from examples._shared.vision.schema import ModelName
 class Config(BaseConfig):
     """Fix the model identity while exposing method and experiment controls."""
 
-    model_config = SettingsConfigDict(env_prefix="QRAFT_EFFICIENTNET_B0_")
+    model_config = SettingsConfigDict(env_prefix="QUANTSMITH_EFFICIENTNET_B0_")
     models: CliSuppress[tuple[Literal[ModelName.EFFICIENTNET_B0]]] = Field(
         default=(ModelName.EFFICIENTNET_B0,)
     )

@@ -4,7 +4,7 @@ This file provides guidance to Codex when working with code in this repository.
 
 ## Project overview
 
-Qraft performs post-training quantization: it uses representative calibration
+QuantSmith performs post-training quantization: it uses representative calibration
 inputs to choose lower-precision encodings for an already trained model. It
 produces both an ONNX graph and inspectable quantization plans.
 
@@ -16,8 +16,8 @@ produces both an ONNX graph and inspectable quantization plans.
   granularity. A plan selects consumer edges to quantize or channels to rescale.
 - MinMax uses observed extrema; Percentile clips histogram tails. SmoothQuant
   balances activation and weight channels before a separate quantization stage.
-- `qraft.result` defines the local `Result[T, E] = Ok[T] | Err[E]` union and the
-  Pydantic `QraftError` diagnostic payload. No result-container dependency is used.
+- `quantsmith.result` defines the local `Result[T, E] = Ok[T] | Err[E]` union and the
+  Pydantic `QuantSmithError` diagnostic payload. No result-container dependency is used.
 - Stackformers supplies the attention components in Transformer examples.
 
 ## Development commands

@@ -17,8 +17,8 @@ from examples._shared.training.schema import (
     TaskReport,
     Variant,
 )
-from qraft.domain import InputArray
-from qraft.result import Err, Ok, QraftError, Result
+from quantsmith.domain import InputArray
+from quantsmith.result import Err, Ok, QuantSmithError, Result
 
 
 def task_html(task: TaskReport) -> str:
@@ -78,7 +78,7 @@ def save(report: Report) -> None:
     page = (
         '<!doctype html><html lang="en"><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
-        "<title>Qraft · Trained model experiments</title><style>"
+        "<title>QuantSmith · Trained model experiments</title><style>"
         "body{max-width:1200px;margin:40px auto;padding:0 24px;background:#101720;"
         "color:#edf2f7;font:16px system-ui}a{color:#7ed5ff}section{margin:40px 0}"
         "table{border-collapse:collapse;width:100%}td,th{padding:12px;text-align:left;"
@@ -86,7 +86,7 @@ def save(report: Report) -> None:
         "overflow-wrap:anywhere;"
         "background:#1d2938;padding:16px}details{margin:12px 0;padding:12px;"
         "border:1px solid #344154}select{padding:8px}.scroll{overflow:auto}</style>"
-        "<h1>Qraft: trained model experiments</h1>"
+        "<h1>QuantSmith: trained model experiments</h1>"
         "<p>Real datasets, trained PyTorch models, FP32 ONNX export, and independently "
         "calibrated MinMax, Percentile, and SmoothQuant graphs.</p>"
         "<p>These small educational experiments are not production benchmarks. "
@@ -153,7 +153,7 @@ def variant_reports(
     example: InputArray,
     directory: Path,
     config: Config,
-) -> Result[tuple[Variant, ...], QraftError]:
+) -> Result[tuple[Variant, ...], QuantSmithError]:
     """Pair completed task metrics with measured inference and saved artifacts."""
     reports: list[Variant] = []
     for method, predict in predictors.items():

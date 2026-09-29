@@ -3,12 +3,12 @@
 import numpy as np
 import pytest
 
-from qraft.algorithms import Algorithm, Statistics
-from qraft.algorithms.smoothquant import SmoothQuant
-from qraft.algorithms.static import StaticW8A8
-from qraft.calibration import MinMaxStats, Requirement
-from qraft.domain import Graph, Node
-from qraft.result import FailureKind
+from quantsmith.algorithms import Algorithm, Statistics
+from quantsmith.algorithms.smoothquant import SmoothQuant
+from quantsmith.algorithms.static import StaticW8A8
+from quantsmith.calibration import MinMaxStats, Requirement
+from quantsmith.domain import Graph, Node
+from quantsmith.result import FailureKind
 from tests.outcomes import expect_error
 
 

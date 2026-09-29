@@ -31,12 +31,12 @@ from examples.windowed_transformer import main as windowed_example
 from examples.windowed_transformer.model import WindowedCharacterTransformer
 from examples.wine_mlp import main as wine_example
 from examples.wine_mlp.model import WineMLP
-from qraft.algorithms import Algorithm
-from qraft.backends.onnx import describe
-from qraft.backends.onnx.pipeline import quantize
-from qraft.domain import FloatArray, InputArray
-from qraft.rules import Rules
-from qraft.runtime import OnnxEvaluator
+from quantsmith.algorithms import Algorithm
+from quantsmith.backends.onnx import describe
+from quantsmith.backends.onnx.pipeline import quantize
+from quantsmith.domain import FloatArray, InputArray
+from quantsmith.rules import Rules
+from quantsmith.runtime import OnnxEvaluator
 from tests.outcomes import expect_error, expect_ok
 
 type ModelKind = TaskKind | ModelName | Literal["projection"]

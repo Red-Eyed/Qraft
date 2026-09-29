@@ -6,10 +6,10 @@ import numpy as np
 import pytest
 import torch
 
-from qraft.reconstruction import Batch, Problem, Replay
-from qraft.reconstruction.affine import quantize, restore
-from qraft.reconstruction.qdrop import QDrop, mixed_inputs
-from qraft.result import Err, FailureKind, Ok, QraftError, Result, failure
+from quantsmith.reconstruction import Batch, Problem, Replay
+from quantsmith.reconstruction.affine import quantize, restore
+from quantsmith.reconstruction.qdrop import QDrop, mixed_inputs
+from quantsmith.result import Err, FailureKind, Ok, QuantSmithError, Result, failure
 from tests.outcomes import expect_ok
 
 
@@ -68,7 +68,7 @@ def test_replay_stops_exactly_at_budget(problem: Problem, batch: Batch) -> None:
     """An unbounded source must neither be materialized nor read past the budget."""
     consumed = 0
 
-    def replay() -> Iterable[Result[Batch, QraftError]]:
+    def replay() -> Iterable[Result[Batch, QuantSmithError]]:
         """Fail immediately if the optimizer requests an unnecessary batch."""
         nonlocal consumed
         for _ in range(3):

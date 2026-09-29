@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "qraft"
-version = "0.7.3"
+name = "quantsmith"
+version = "0.8.0"
 description = "Composable post-training quantization with explicit plans"
 readme = "README.md"
 license = "MIT"

@@ -23,8 +23,8 @@ from examples._shared.vision.models import (
     TorchRunner,
     checked_categories,
 )
-from qraft.domain import Encoding, PerChannel, PerTensor
-from qraft.plan import QuantizationPlan, QuantizeInput, RescaleInput
+from quantsmith.domain import Encoding, PerChannel, PerTensor
+from quantsmith.plan import QuantizationPlan, QuantizeInput, RescaleInput
 
 
 @pytest.mark.parametrize("per_channel", [False, True])

@@ -7,8 +7,8 @@ import numpy as np
 import pytest
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from qraft.algorithms.encoding import encode
-from qraft.calibration import (
+from quantsmith.algorithms.encoding import encode
+from quantsmith.calibration import (
     MinMaxStats,
     Percentile,
     Requirement,
@@ -16,8 +16,8 @@ from qraft.calibration import (
     extrema,
     histograms,
 )
-from qraft.config import QuantizationConfig
-from qraft.domain import (
+from quantsmith.config import QuantizationConfig
+from quantsmith.domain import (
     Absent,
     Encoding,
     FloatArray,
@@ -25,7 +25,7 @@ from qraft.domain import (
     IntegerType,
     PerTensor,
 )
-from qraft.result import Ok, QraftError, Result
+from quantsmith.result import Ok, QuantSmithError, Result
 from tests.outcomes import expect_error, expect_ok
 
 
@@ -37,7 +37,7 @@ class IdentityEvaluator(BaseModel):
 
     def run(
         self, sample: Mapping[str, InputArray], outputs: tuple[str, ...]
-    ) -> Result[Mapping[str, FloatArray], QraftError]:
+    ) -> Result[Mapping[str, FloatArray], QuantSmithError]:
         """Return requested tensors without retaining them."""
         self.calls.append(outputs)
         return Ok(

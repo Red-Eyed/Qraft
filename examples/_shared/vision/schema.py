@@ -31,7 +31,7 @@ class DemoConfig(BaseSettings, frozen=True):
         cli_kebab_case=True,
         cli_parse_args=False,
         extra="forbid",
-        env_prefix="QRAFT_DEMO_",
+        env_prefix="QUANTSMITH_DEMO_",
         populate_by_name=True,
     )
     models: tuple[ModelName, ...] = Field(default=tuple(ModelName), min_length=1)

@@ -5,8 +5,8 @@ from collections.abc import Iterable, Mapping
 import numpy as np
 from onnx import ModelProto, TensorProto, helper, numpy_helper
 
-from qraft.calibration import Samples
-from qraft.domain import FloatArray
+from quantsmith.calibration import Samples
+from quantsmith.domain import FloatArray
 
 
 def example_model() -> ModelProto:

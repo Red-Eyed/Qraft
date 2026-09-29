@@ -13,7 +13,7 @@ from examples._shared.vision.schema import ModelName
 class Config(BaseConfig):
     """Fix the model identity while exposing method and experiment controls."""
 
-    model_config = SettingsConfigDict(env_prefix="QRAFT_MOBILENET_V2_")
+    model_config = SettingsConfigDict(env_prefix="QUANTSMITH_MOBILENET_V2_")
     models: CliSuppress[tuple[Literal[ModelName.MOBILENET_V2]]] = Field(
         default=(ModelName.MOBILENET_V2,)
     )

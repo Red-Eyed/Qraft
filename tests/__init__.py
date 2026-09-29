@@ -1,1 +1,1 @@
-"""Qraft behavioral and static contract tests."""
+"""QuantSmith behavioral and static contract tests."""

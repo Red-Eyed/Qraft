@@ -18,7 +18,7 @@ from examples._shared.vision.schema import (
     Metrics,
     Prediction,
 )
-from qraft.domain import FloatArray
+from quantsmith.domain import FloatArray
 
 Runner = Callable[[FloatArray], FloatArray]
 

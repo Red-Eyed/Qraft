@@ -7,17 +7,17 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from qraft.result import Err, Ok, QraftError, Result
+from quantsmith.result import Err, Ok, QuantSmithError, Result
 
 
 def run_and_report[ConfigT, ReportT: BaseModel](
     config: ConfigT,
-    run: Callable[[ConfigT], Result[ReportT, QraftError]],
+    run: Callable[[ConfigT], Result[ReportT, QuantSmithError]],
     *,
     output: Path,
     json_output: bool,
 ) -> None:
-    """Keep logs off JSON stdout and exit unsuccessfully on an expected Qraft error."""
+    """Keep logs off JSON stdout and fail on an expected QuantSmith error."""
     with redirect_stdout(sys.stderr):
         outcome = run(config)
     match outcome:

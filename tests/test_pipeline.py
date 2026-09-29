@@ -7,17 +7,17 @@ import onnx
 import pytest
 from onnx import helper
 
-from qraft.algorithms import Algorithm, build_plan
-from qraft.algorithms.smoothquant import SmoothQuant
-from qraft.algorithms.static import StaticW8A8
-from qraft.backends.onnx import describe, lower
-from qraft.backends.onnx.pipeline import quantize
-from qraft.calibration import Percentile, Samples
-from qraft.config import supported
-from qraft.domain import IntegerType, PerChannel
-from qraft.plan import QuantizeInput
-from qraft.rules import ByName, Exclude, Rule, Rules
-from qraft.runtime import OnnxEvaluator, evaluate
+from quantsmith.algorithms import Algorithm, build_plan
+from quantsmith.algorithms.smoothquant import SmoothQuant
+from quantsmith.algorithms.static import StaticW8A8
+from quantsmith.backends.onnx import describe, lower
+from quantsmith.backends.onnx.pipeline import quantize
+from quantsmith.calibration import Percentile, Samples
+from quantsmith.config import supported
+from quantsmith.domain import IntegerType, PerChannel
+from quantsmith.plan import QuantizeInput
+from quantsmith.rules import ByName, Exclude, Rule, Rules
+from quantsmith.runtime import OnnxEvaluator, evaluate
 from tests.conftest import OperatorCase
 from tests.outcomes import expect_error, expect_ok
 

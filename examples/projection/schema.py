@@ -7,14 +7,14 @@ from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, CliImplicitFlag, SettingsConfigDict
 
 from examples._shared.schema import Coverage, Method, QuantizationMethod
-from qraft.runtime import Evaluation
+from quantsmith.runtime import Evaluation
 
 
 class Config(BaseSettings, frozen=True):
     """Select independent recipes and explicit streamed sample budgets."""
 
     model_config = SettingsConfigDict(
-        cli_kebab_case=True, env_prefix="QRAFT_PROJECTION_", populate_by_name=True
+        cli_kebab_case=True, env_prefix="QUANTSMITH_PROJECTION_", populate_by_name=True
     )
     output: Path = Field(default=Path("artifacts/projection"))
     methods: list[QuantizationMethod] = Field(
@@ -46,7 +46,7 @@ class Report(BaseModel, frozen=True):
     """Record reproducible controls, the FP32 baseline, and selected method results."""
 
     created_at: datetime = Field()
-    qraft: str = Field()
+    quantsmith: str = Field()
     config: Config = Field()
     baseline: Path = Field()
     variants: tuple[Variant, ...] = Field()

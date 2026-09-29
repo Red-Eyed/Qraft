@@ -19,7 +19,7 @@ def save(report: Report) -> None:
     (directory / "index.html").write_text(
         '<!doctype html><html lang="en"><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
-        "<title>Qraft · Projection</title><style>"
+        "<title>QuantSmith · Projection</title><style>"
         "body{max-width:900px;margin:40px auto;padding:0 20px;font:16px system-ui}"
         "table{border-collapse:collapse}td,th{padding:12px;text-align:left;"
         "border-bottom:1px solid #aaa}</style>"

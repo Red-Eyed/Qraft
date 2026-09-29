@@ -13,7 +13,7 @@ from examples._shared.training.schema import TaskKind
 class Config(BaseConfig):
     """Fix the model identity while exposing method and experiment controls."""
 
-    model_config = SettingsConfigDict(env_prefix="QRAFT_WINE_MLP_")
+    model_config = SettingsConfigDict(env_prefix="QUANTSMITH_WINE_MLP_")
     tasks: CliSuppress[tuple[Literal[TaskKind.WINE]]] = Field(default=(TaskKind.WINE,))
     output: Path = Field(default=Path("artifacts/wine_mlp"))
 

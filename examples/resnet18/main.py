@@ -1,6 +1,6 @@
 """ResNet-18 on real Imagenette images: preprocessing, export, and quantization.
 
-Read run() first. Model loading, ONNX export, input replay, and Qraft configurations
+Read run() first. Model loading, ONNX export, input replay, and quantization choices
 are written here so you can replace them for your own image-classification task.
 """
 
@@ -42,18 +42,18 @@ from examples._shared.vision.schema import (
     SuiteReport,
 )
 from examples.resnet18.schema import Config
-from qraft.algorithms import Algorithm
-from qraft.algorithms.smoothquant import SmoothQuant
-from qraft.algorithms.static import StaticW8A8
-from qraft.backends.onnx import describe
-from qraft.backends.onnx.pipeline import quantize
-from qraft.calibration import Percentile, Samples
-from qraft.domain import FloatArray, Graph, Node
-from qraft.result import Err, Ok, QraftError, Result
-from qraft.rules import Exclude, Rule, Rules
+from quantsmith.algorithms import Algorithm
+from quantsmith.algorithms.smoothquant import SmoothQuant
+from quantsmith.algorithms.static import StaticW8A8
+from quantsmith.backends.onnx import describe
+from quantsmith.backends.onnx.pipeline import quantize
+from quantsmith.calibration import Percentile, Samples
+from quantsmith.domain import FloatArray, Graph, Node
+from quantsmith.result import Err, Ok, QuantSmithError, Result
+from quantsmith.rules import Exclude, Rule, Rules
 
 
-def run(config: Config) -> Result[SuiteReport, QraftError]:
+def run(config: Config) -> Result[SuiteReport, QuantSmithError]:
     """Execute ResNet-18 → FP32 ONNX → selected INT8 recipes → held-out predictions."""
     config.output.mkdir(parents=True, exist_ok=True)
     torch.hub.set_dir(str(config.cache / "torch"))
@@ -136,7 +136,7 @@ class ConstantWeights(BaseModel, frozen=True):
 
 
 def recipes(config: Config) -> dict[QuantizationMethod, tuple[Rules[Algorithm], ...]]:
-    """Spell out the three Qraft configurations so they can be adapted independently."""
+    """Define three QuantSmith configurations for independent adaptation."""
     minmax: Rules[Algorithm] = Rules(
         default=Exclude(reason="outside constant-weight operators"),
         overrides=(Rule(selector=ConstantWeights(), decision=StaticW8A8()),),
@@ -222,7 +222,7 @@ def export_onnx(
 
 def quantized_variants(
     fp32: onnx.ModelProto, source: Samples, config: Config, progress: Progress
-) -> Result[tuple[dict[Method, Runner], dict[Method, Coverage]], QraftError]:
+) -> Result[tuple[dict[Method, Runner], dict[Method, Coverage]], QuantSmithError]:
     """Compare independently calibrated recipes without quantizing a previous INT8
     graph.
     """

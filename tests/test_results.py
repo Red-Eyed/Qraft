@@ -8,17 +8,25 @@ import numpy as np
 import pytest
 from onnx import numpy_helper
 
-from qraft.algorithms import Algorithm, Needs, Statistics, build_plan
-from qraft.algorithms.static import StaticW8A8
-from qraft.backends.onnx import describe, load
-from qraft.backends.onnx.pipeline import quantize
-from qraft.calibration import Requirement, Samples, collect, extrema
-from qraft.config import supported
-from qraft.domain import FloatArray, Graph, InputArray, Node
-from qraft.plan import QuantizationPlan
-from qraft.result import Err, FailureKind, Ok, QraftError, Result, failure, validate
-from qraft.rules import Rules
-from qraft.runtime import OnnxEvaluator, compare, evaluate
+from quantsmith.algorithms import Algorithm, Needs, Statistics, build_plan
+from quantsmith.algorithms.static import StaticW8A8
+from quantsmith.backends.onnx import describe, load
+from quantsmith.backends.onnx.pipeline import quantize
+from quantsmith.calibration import Requirement, Samples, collect, extrema
+from quantsmith.config import supported
+from quantsmith.domain import FloatArray, Graph, InputArray, Node
+from quantsmith.plan import QuantizationPlan
+from quantsmith.result import (
+    Err,
+    FailureKind,
+    Ok,
+    QuantSmithError,
+    Result,
+    failure,
+    validate,
+)
+from quantsmith.rules import Rules
+from quantsmith.runtime import OnnxEvaluator, compare, evaluate
 from tests.conftest import OperatorCase
 from tests.outcomes import expect_error, expect_ok
 from tests.test_calibration import IdentityEvaluator
@@ -27,13 +35,13 @@ from tests.test_calibration import IdentityEvaluator
 @pytest.mark.parametrize("successful", [True, False])
 def test_result_match(successful: bool) -> None:
     """Explicit matching preserves error identity and skips success-only work."""
-    error = QraftError(
+    error = QuantSmithError(
         kind=FailureKind.INVALID_DATA, operation="composition", detail="bad input"
     )
-    outcome: Result[int, QraftError] = Ok(2) if successful else Err(error)
+    outcome: Result[int, QuantSmithError] = Ok(2) if successful else Err(error)
     visited: list[int] = []
 
-    def transform(value: Result[int, QraftError]) -> Result[int, QraftError]:
+    def transform(value: Result[int, QuantSmithError]) -> Result[int, QuantSmithError]:
         """Transform only a successful integer; propagate the original error variant."""
         match value:
             case Ok(number):
@@ -71,13 +79,13 @@ def test_failure_carries_validated_diagnostic() -> None:
 class RejectPlanning:
     """Exercise plugin rejection without throwing to stop the pipeline."""
 
-    def requirements(self, node: Node, graph: Graph) -> Result[Needs, QraftError]:
+    def requirements(self, node: Node, graph: Graph) -> Result[Needs, QuantSmithError]:
         """Reject admission before the collector consumes any data."""
         return failure(FailureKind.UNSUPPORTED, node.name, "plugin declined layout")
 
     def plan(
         self, node: Node, graph: Graph, stats: Statistics
-    ) -> Result[QuantizationPlan, QraftError]:
+    ) -> Result[QuantizationPlan, QuantSmithError]:
         """Make accidental planning after admission rejection visible."""
         pytest.fail("a rejected plugin must never plan")
 
@@ -169,7 +177,7 @@ def test_missing_observed_output() -> None:
 
         def run(
             self, sample: "Mapping[str, InputArray]", outputs: tuple[str, ...]
-        ) -> "Result[Mapping[str, FloatArray], QraftError]":
+        ) -> "Result[Mapping[str, FloatArray], QuantSmithError]":
             """Demonstrate the runtime obligation beyond protocol signature checking."""
             return Ok({})
 

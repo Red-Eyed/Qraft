@@ -45,7 +45,7 @@ another path through the same algorithm.
 2. Supply `Statistics` directly. Test `.requirements()` separately to check which
    tensor and retained axes the algorithm requests.
 3. Call `.plan()` and assert operation kind, target edge, axis, and numerical values.
-   Check expected failures through their `QraftError` category and diagnostic.
+   Check expected failures through their `QuantSmithError` category and diagnostic.
 
 Use pytest fixtures for reusable setup and parametrization for layout variants.
 Keep the first worked example self-contained. No execution fake is needed for

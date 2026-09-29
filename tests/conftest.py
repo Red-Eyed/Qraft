@@ -7,8 +7,8 @@ import pytest
 from onnx import ModelProto, TensorProto, helper, numpy_helper
 from pydantic import BaseModel, ConfigDict, Field
 
-from qraft.calibration import Samples
-from qraft.domain import FloatArray
+from quantsmith.calibration import Samples
+from quantsmith.domain import FloatArray
 
 
 class OperatorCase(BaseModel):

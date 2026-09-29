@@ -13,7 +13,7 @@ from pydantic import ConfigDict, Field, TypeAdapter
 from torch import Tensor, nn
 from torchvision.models import WeightsEnum
 
-from qraft.domain import FloatArray
+from quantsmith.domain import FloatArray
 
 _TENSOR_OUTPUT = TypeAdapter(
     Tensor, config=ConfigDict(strict=True, arbitrary_types_allowed=True)

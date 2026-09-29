@@ -16,7 +16,7 @@ state, and a vocabulary head. Each fixed context starts with zero state; this is
 not a stateful serving or KV-cache example. `torch.onnx.export` exposes the shared
 recurrent projections during fixed-length inference.
 
-`calibration_samples()` preserves int64 token IDs. Qraft quantizes the constant
+`calibration_samples()` preserves int64 token IDs. QuantSmith quantizes the constant
 recurrent/head weights; it does not turn embeddings or all recurrent arithmetic
 into integer operations. This is a secondary example after the Transformers.
 
@@ -72,7 +72,7 @@ prints the report as JSON. Downloads and output setup are automatic.
 
 Replace the local recurrent model and character vocabulary with your sequence task. Decide explicitly how hidden state is initialized or passed at inference. Export that contract, replay representative inputs, and evaluate your sequence metric on held-out data.
 
-The Qraft boundary in the example is deliberately small:
+The QuantSmith boundary in the example is deliberately small:
 
 ```python
 outcome = quantize(
@@ -83,7 +83,7 @@ outcome = quantize(
 )
 ```
 
-Model training, datasets, and HTML reports are demonstration scaffolding; Qraft
+Model training, datasets, and HTML reports are demonstration scaffolding; QuantSmith
 needs the FP32 ONNX graph, a replayable input factory, and the selected stage rules.
 The result contains `model` and inspectable `plans`, or a typed `Err` diagnostic.
 

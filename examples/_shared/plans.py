@@ -1,4 +1,4 @@
-"""Report quantization decisions without hiding how examples configure Qraft."""
+"""Report quantization decisions without hiding how examples configure QuantSmith."""
 
 import json
 from pathlib import Path
@@ -7,8 +7,8 @@ from typing import TypedDict, assert_never
 import numpy as np
 
 from examples._shared.schema import Coverage
-from qraft.domain import FloatArray, Graph, IntArray, PerChannel, PerTensor
-from qraft.plan import (
+from quantsmith.domain import FloatArray, Graph, IntArray, PerChannel, PerTensor
+from quantsmith.plan import (
     Operation,
     QuantizationPlan,
     QuantizeConstant,

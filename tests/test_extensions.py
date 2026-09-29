@@ -5,12 +5,12 @@ from collections.abc import Mapping
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
-from qraft.algorithms import Algorithm, Needs, Statistics, build_plan
-from qraft.calibration import MinMaxStats, Requirement
-from qraft.domain import Graph, Node
-from qraft.plan import QuantizationPlan
-from qraft.result import Ok, QraftError, Result
-from qraft.rules import ByName, ByOperator, ByTensor, Exclude, Rule, Rules
+from quantsmith.algorithms import Algorithm, Needs, Statistics, build_plan
+from quantsmith.calibration import MinMaxStats, Requirement
+from quantsmith.domain import Graph, Node
+from quantsmith.plan import QuantizationPlan
+from quantsmith.result import Ok, QuantSmithError, Result
+from quantsmith.rules import ByName, ByOperator, ByTensor, Exclude, Rule, Rules
 from tests.outcomes import expect_ok
 from tests.test_calibration import IdentityEvaluator
 
@@ -18,13 +18,13 @@ from tests.test_calibration import IdentityEvaluator
 class ObserveOnly:
     """An external algorithm that requests shared data and chooses exclusion."""
 
-    def requirements(self, node: Node, graph: Graph) -> Result[Needs, QraftError]:
+    def requirements(self, node: Node, graph: Graph) -> Result[Needs, QuantSmithError]:
         """Request activation data through the common collection loop."""
         return Ok(Needs(ranges=(Requirement(tensor=node.inputs[0]),)))
 
     def plan(
         self, node: Node, graph: Graph, stats: Statistics
-    ) -> Result[QuantizationPlan, QraftError]:
+    ) -> Result[QuantizationPlan, QuantSmithError]:
         """Verify typed statistics are available without backend access."""
         observed: MinMaxStats = stats.ranges[Requirement(tensor=node.inputs[0])]
         assert float(observed.maximum) == 2

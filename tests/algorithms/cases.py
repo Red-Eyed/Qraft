@@ -6,7 +6,7 @@ from typing import Literal
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
-from qraft.domain import FloatArray, Graph, Node
+from quantsmith.domain import FloatArray, Graph, Node
 
 
 class OperatorLayout(BaseModel):

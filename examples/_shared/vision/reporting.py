@@ -17,7 +17,7 @@ from examples._shared.vision.schema import (
     SuiteReport,
     VariantReport,
 )
-from qraft.domain import FloatArray
+from quantsmith.domain import FloatArray
 
 STYLE = """
 :root { color-scheme: light; font: 15px system-ui;
@@ -112,8 +112,8 @@ def render_html(report: SuiteReport) -> str:
     config = report.config
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Qraft — pretrained models</title><style>{STYLE}</style></head><body>
-<h1>PyTorch → ONNX → Qraft</h1>
+<title>QuantSmith — pretrained models</title><style>{STYLE}</style></head><body>
+<h1>PyTorch → ONNX → QuantSmith</h1>
 <p>Real pretrained models on real images. {config.calibration_samples} training-split
 images for calibration; {config.evaluation_samples} disjoint validation images
 for evaluation.
@@ -125,7 +125,7 @@ Gallery images are the first selected evaluation samples, not chosen by outcome.
 {config.warmup} warmups and {config.benchmark_runs} timed runs.
 ORT optimizations enabled;
 preprocessing, export, and session startup excluded. Adapter validation is included.
-Artifact sizes are measured: Qraft currently retains FP32 weight initializers, so QDQ
+Artifact sizes are measured: QuantSmith retains FP32 weight initializers, so QDQ
 files need not shrink. SmoothQuant is applied only to eligible ungrouped operators.
 Softmax scores in the gallery are not calibrated probabilities.</p>
 <p><a href="results.json">Full JSON results</a> ·

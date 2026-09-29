@@ -3,9 +3,9 @@
 import numpy as np
 import pytest
 
-from qraft.algorithms.encoding import encode
-from qraft.calibration import MinMaxStats
-from qraft.domain import IntegerType, PerChannel, PerTensor
+from quantsmith.algorithms.encoding import encode
+from quantsmith.calibration import MinMaxStats
+from quantsmith.domain import IntegerType, PerChannel, PerTensor
 
 
 @pytest.mark.parametrize(

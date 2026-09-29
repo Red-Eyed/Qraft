@@ -23,4 +23,4 @@ relative to static calibration. QDrop's relaxed training objective need not impr
 the final hard model. See [DEVLOG.md](DEVLOG.md) for the measured default run.
 
 PD-Quant is a future comparison for real CNN benchmarks; it is not in this runner.
-The [component guide](../../src/qraft/reconstruction/README.md) details limitations.
+The [component guide](../../src/quantsmith/reconstruction/README.md) details limitations.

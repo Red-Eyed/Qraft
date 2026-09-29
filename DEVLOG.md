@@ -1,4 +1,15 @@
-# Qraft development log
+# QuantSmith development log
+
+## 2026-09-29 — Package and repository rename
+
+Version 0.8.0 adopts QuantSmith as the project name and `quantsmith` as the
+distribution and Python import name. The former `qraft` distribution name is
+already used by an unrelated PyPI project. This release renames the import
+package, public `QuantSmithError` diagnostic, example report metadata, and
+example environment prefixes. Existing consumers must update those references.
+Older entries below retain the name and paths used when they were written.
+Ruff, formatting, strict Pyrefly, and all 401 tests pass. The built wheel
+contains the `quantsmith` import package and `quantsmith` 0.8.0 metadata.
 
 ## 2026-09-26 — Local result union and explicit matching
 

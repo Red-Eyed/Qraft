@@ -73,7 +73,7 @@ prints the report as JSON. Downloads and output setup are automatic.
 
 Replace the checkpoint and matching preprocessing. Use representative calibration images instead of choosing a clipping value from this small experiment alone. Replace category/output validation for your own classes, then compare held-out accuracy across the matrix columns.
 
-The Qraft boundary in the example is deliberately small:
+The QuantSmith boundary in the example is deliberately small:
 
 ```python
 outcome = quantize(
@@ -84,7 +84,7 @@ outcome = quantize(
 )
 ```
 
-Model training, datasets, and HTML reports are demonstration scaffolding; Qraft
+Model training, datasets, and HTML reports are demonstration scaffolding; QuantSmith
 needs the FP32 ONNX graph, a replayable input factory, and the selected stage rules.
 The result contains `model` and inspectable `plans`, or a typed `Err` diagnostic.
 

@@ -15,16 +15,16 @@ from rich.console import Console
 
 from examples._shared.plans import save_plans
 from examples.projection.model import example_model, sample_source
-from qraft.backends.onnx.pipeline import PipelineResult, quantize
-from qraft.backends.onnx.reconstruction import reconstruct
-from qraft.calibration import Samples
-from qraft.config import PercentileConfig, QuantizationConfig
-from qraft.reconstruction import Reconstructor
-from qraft.reconstruction.gptqv2 import GPTQv2
-from qraft.reconstruction.qdrop import QDrop
-from qraft.result import Err, Ok, QraftError, Result
-from qraft.rules import Rules
-from qraft.runtime import Evaluation, OnnxEvaluator, evaluate
+from quantsmith.backends.onnx.pipeline import PipelineResult, quantize
+from quantsmith.backends.onnx.reconstruction import reconstruct
+from quantsmith.calibration import Samples
+from quantsmith.config import PercentileConfig, QuantizationConfig
+from quantsmith.reconstruction import Reconstructor
+from quantsmith.reconstruction.gptqv2 import GPTQv2
+from quantsmith.reconstruction.qdrop import QDrop
+from quantsmith.result import Err, Ok, QuantSmithError, Result
+from quantsmith.rules import Rules
+from quantsmith.runtime import Evaluation, OnnxEvaluator, evaluate
 
 
 class Method(StrEnum):
@@ -71,14 +71,14 @@ class Report(BaseModel, frozen=True):
     """Preserve reproducible settings without implying task-accuracy evidence."""
 
     created_at: datetime
-    qraft: str
+    quantsmith: str
     config: Config
     measurements: tuple[Measurement, ...]
 
 
 def candidate(
     model: ModelProto, samples: Samples, method: Method, config: Config
-) -> Result[PipelineResult, QraftError]:
+) -> Result[PipelineResult, QuantSmithError]:
     """Apply each method to the same original graph and replay factory."""
     match method:
         case Method.MINMAX:
@@ -100,7 +100,7 @@ def candidate(
 
 def measure(
     model: ModelProto, method: Method, config: Config
-) -> Result[Measurement, QraftError]:
+) -> Result[Measurement, QuantSmithError]:
     """Export exact plans and evaluate on independently seeded streamed samples."""
     started = perf_counter()
     samples = sample_source(config.calibration_seed, config.calibration_batches)
@@ -129,7 +129,7 @@ def measure(
     )
 
 
-def run(config: Config) -> Result[Report, QraftError]:
+def run(config: Config) -> Result[Report, QuantSmithError]:
     """Run the comparison with visible progress and provision the artifact folder."""
     config.output.mkdir(parents=True, exist_ok=True)
     model = example_model()
@@ -148,7 +148,7 @@ def run(config: Config) -> Result[Report, QraftError]:
         )
     report = Report(
         created_at=datetime.now(UTC),
-        qraft=version("qraft"),
+        quantsmith=version("quantsmith"),
         config=config,
         measurements=tuple(measurements),
     )

@@ -3,12 +3,12 @@
 import numpy as np
 import pytest
 
-from qraft.algorithms import Needs, Statistics
-from qraft.algorithms.smoothquant import SmoothQuant
-from qraft.calibration import MinMaxStats, Requirement
-from qraft.domain import Graph, Node
-from qraft.plan import RescaleInput
-from qraft.result import FailureKind
+from quantsmith.algorithms import Needs, Statistics
+from quantsmith.algorithms.smoothquant import SmoothQuant
+from quantsmith.calibration import MinMaxStats, Requirement
+from quantsmith.domain import Graph, Node
+from quantsmith.plan import RescaleInput
+from quantsmith.result import FailureKind
 from tests.algorithms.cases import OperatorLayout, graph_for
 from tests.outcomes import expect_error, expect_ok
 

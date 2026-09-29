@@ -2,7 +2,7 @@
 
 Choose a row and a method. Each model folder has a README and a concrete
 [`main.py`](transformer/main.py) that shows model setup, ONNX export, replayable
-calibration inputs, Qraft configuration, and held-out comparison. The code is
+calibration inputs, QuantSmith configuration, and held-out comparison. The code is
 intentionally explicit: you can read one example without following a shared runner.
 
 | Model / task | MinMax | Percentile | SmoothQuant → MinMax |
@@ -17,7 +17,7 @@ intentionally explicit: you can read one example without following a shared runn
 | [Small projection](projection/README.md) | [Read](projection/README.md#minmax) | [Read](projection/README.md#percentile) | [Read](projection/README.md#smoothquant) |
 
 The Transformer examples are the primary reading path. Start with
-[the projection](projection/README.md) if you want the smallest Qraft API example.
+[the projection](projection/README.md) if you want the smallest QuantSmith API example.
 The RNN is a secondary demonstration.
 
 ## Read one example
@@ -57,7 +57,7 @@ Calibration and held-out data remain separate.
 | [Small projection](projection/README.md) | `x`: float32 `[16, 8]` |
 
 Text context length is configurable before fixed-shape export. Image transforms
-come from the exact pretrained checkpoint. Qraft takes native NumPy input arrays;
+come from the exact pretrained checkpoint. QuantSmith takes native NumPy input arrays;
 the factory must yield the exact ONNX input names and replay the same inputs on
 every calibration pass.
 

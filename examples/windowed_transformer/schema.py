@@ -13,7 +13,7 @@ from examples._shared.training.schema import TaskKind
 class Config(BaseConfig):
     """Fix the model identity while exposing method and experiment controls."""
 
-    model_config = SettingsConfigDict(env_prefix="QRAFT_WINDOWED_TRANSFORMER_")
+    model_config = SettingsConfigDict(env_prefix="QUANTSMITH_WINDOWED_TRANSFORMER_")
     tasks: CliSuppress[tuple[Literal[TaskKind.WINDOWED]]] = Field(
         default=(TaskKind.WINDOWED,)
     )

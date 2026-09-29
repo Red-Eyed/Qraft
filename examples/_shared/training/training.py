@@ -10,7 +10,7 @@ from rich.progress import Progress
 from torch import Tensor, nn
 
 from examples._shared.training.schema import Config, Dataset, TaskKind
-from qraft.domain import FloatArray, InputArray
+from quantsmith.domain import FloatArray, InputArray
 
 _TENSOR_OUTPUT = TypeAdapter(
     Tensor, config=ConfigDict(strict=True, arbitrary_types_allowed=True)

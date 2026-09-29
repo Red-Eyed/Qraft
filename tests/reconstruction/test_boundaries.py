@@ -8,13 +8,13 @@ import pytest
 from numpy.typing import NDArray
 from pydantic import ValidationError
 
-from qraft.domain import Encoding, FloatArray, InputArray, PerChannel
-from qraft.plan import QuantizationPlan, QuantizeConstant, QuantizeInput
-from qraft.reconstruction import Batch, Problem, Replay
-from qraft.reconstruction.gptqv2 import GPTQv2
-from qraft.reconstruction.qdrop import QDrop
-from qraft.reconstruction.replay import paired_replay
-from qraft.result import Err, FailureKind, Ok, QraftError, Result, failure
+from quantsmith.domain import Encoding, FloatArray, InputArray, PerChannel
+from quantsmith.plan import QuantizationPlan, QuantizeConstant, QuantizeInput
+from quantsmith.reconstruction import Batch, Problem, Replay
+from quantsmith.reconstruction.gptqv2 import GPTQv2
+from quantsmith.reconstruction.qdrop import QDrop
+from quantsmith.reconstruction.replay import paired_replay
+from quantsmith.result import Err, FailureKind, Ok, QuantSmithError, Result, failure
 
 
 @pytest.mark.parametrize(
@@ -66,7 +66,7 @@ class MissingTensor:
 
     def run(
         self, sample: Mapping[str, InputArray], outputs: tuple[str, ...]
-    ) -> Result[Mapping[str, FloatArray], QraftError]:
+    ) -> Result[Mapping[str, FloatArray], QuantSmithError]:
         """Return no tensors so replay admission must reject the response."""
         return Ok({})
 
@@ -90,7 +90,7 @@ def test_unexpected_plugin_exceptions_propagate(
     def broken() -> Replay:
         """Return a source whose execution raises an unexpected exception."""
 
-        def source() -> tuple[Result[Batch, QraftError], ...]:
+        def source() -> tuple[Result[Batch, QuantSmithError], ...]:
             """Represent a plugin defect, not a documented evaluator failure."""
             raise RuntimeError("plugin defect")
 
@@ -122,7 +122,7 @@ def test_replay_failure_identity() -> None:
 
         def run(
             self, sample: Mapping[str, InputArray], outputs: tuple[str, ...]
-        ) -> Result[Mapping[str, FloatArray], QraftError]:
+        ) -> Result[Mapping[str, FloatArray], QuantSmithError]:
             """Return the shared failure container."""
             return error
 

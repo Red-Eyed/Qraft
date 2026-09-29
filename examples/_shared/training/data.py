@@ -10,8 +10,16 @@ from pydantic import ConfigDict, TypeAdapter
 from sklearn.datasets import load_wine
 
 from examples._shared.training.schema import Config, Dataset, Split, TaskKind, Tokens
-from qraft.domain import FloatArray
-from qraft.result import Err, FailureKind, Ok, QraftError, Result, failure, validate
+from quantsmith.domain import FloatArray
+from quantsmith.result import (
+    Err,
+    FailureKind,
+    Ok,
+    QuantSmithError,
+    Result,
+    failure,
+    validate,
+)
 
 TEXT_URL = (
     "https://raw.githubusercontent.com/karpathy/char-rnn/"
@@ -87,7 +95,7 @@ def cached_text(cache: Path) -> str:
 
 def text_windows(
     tokens: Tokens, start: int, end: int, count: int, length: int
-) -> Result[Split, QraftError]:
+) -> Result[Split, QuantSmithError]:
     """Select nonoverlapping windows entirely inside one contiguous data split."""
     available = (end - start - 1) // length
     if count > available:
@@ -108,7 +116,7 @@ def text_windows(
 
 def shakespeare(
     config: Config, kind: TaskKind = TaskKind.TEXT
-) -> Result[Dataset, QraftError]:
+) -> Result[Dataset, QuantSmithError]:
     """Fit vocabulary on training text; never train on calibration/evaluation spans."""
     match validate("Shakespeare data", lambda: cached_text(config.cache)):
         case Err() as error:

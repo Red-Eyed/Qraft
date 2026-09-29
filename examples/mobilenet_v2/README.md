@@ -17,7 +17,7 @@ grouped depthwise convolutions, and a classifier; it is not a residual-CNN alias
 
 Read the grouped-convolution condition in `ConstantWeights.matches()`. Ordinary
 static quantization includes depthwise layers. SmoothQuant excludes grouped Conv
-because Qraft's rescaling supports ungrouped Conv; the following MinMax stage
+because QuantSmith's rescaling supports ungrouped Conv; the following MinMax stage
 still quantizes supported depthwise weights. The real val-image gallery shows
 whether class predictions change.
 
@@ -73,7 +73,7 @@ prints the report as JSON. Downloads and output setup are automatic.
 
 Replace the pretrained builder and matching preprocessing for your mobile model. Keep the grouped-convolution check if you use depthwise layers. Replace image sources, categories, and classifier-output validation for your task; compare measured quality before choosing a method.
 
-The Qraft boundary in the example is deliberately small:
+The QuantSmith boundary in the example is deliberately small:
 
 ```python
 outcome = quantize(
@@ -84,7 +84,7 @@ outcome = quantize(
 )
 ```
 
-Model training, datasets, and HTML reports are demonstration scaffolding; Qraft
+Model training, datasets, and HTML reports are demonstration scaffolding; QuantSmith
 needs the FP32 ONNX graph, a replayable input factory, and the selected stage rules.
 The result contains `model` and inspectable `plans`, or a typed `Err` diagnostic.
 

@@ -15,7 +15,7 @@ from examples._shared.schema import (
     Method,
     QuantizationMethod,
 )
-from qraft.domain import InputArray
+from quantsmith.domain import InputArray
 
 type Tokens = np.ndarray[tuple[int, ...], np.dtype[np.int64]]
 
@@ -33,7 +33,7 @@ class Config(BaseSettings, frozen=True):
     """Make training, sampling, calibration, and artifact budgets explicit."""
 
     model_config = SettingsConfigDict(
-        cli_kebab_case=True, env_prefix="QRAFT_TRAINING_", populate_by_name=True
+        cli_kebab_case=True, env_prefix="QUANTSMITH_TRAINING_", populate_by_name=True
     )
     tasks: tuple[TaskKind, ...] = Field(
         default=(TaskKind.TRANSFORMER, TaskKind.WINDOWED, TaskKind.WINE), min_length=1

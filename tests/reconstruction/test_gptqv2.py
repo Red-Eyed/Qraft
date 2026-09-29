@@ -6,11 +6,11 @@ from collections.abc import Iterable
 import numpy as np
 import pytest
 
-from qraft.domain import IntArray
-from qraft.reconstruction import Batch, Problem, Replay
-from qraft.reconstruction.affine import quantize, restore
-from qraft.reconstruction.gptqv2 import GPTQv2, collect
-from qraft.result import FailureKind, Ok, QraftError, Result, failure
+from quantsmith.domain import IntArray
+from quantsmith.reconstruction import Batch, Problem, Replay
+from quantsmith.reconstruction.affine import quantize, restore
+from quantsmith.reconstruction.gptqv2 import GPTQv2, collect
+from quantsmith.result import FailureKind, Ok, QuantSmithError, Result, failure
 from tests.outcomes import expect_ok
 
 
@@ -66,7 +66,7 @@ def test_statistics_are_partition_invariant(
 ) -> None:
     """Weight moments by row count, including differently sized final batches."""
 
-    def chunks() -> Iterable[Result[Batch, QraftError]]:
+    def chunks() -> Iterable[Result[Batch, QuantSmithError]]:
         """Partition the same samples without changing their contributions."""
         for start in range(0, len(batch.reference), 7):
             yield Ok(
@@ -86,7 +86,7 @@ def test_stream_does_not_retain_prior_batches(problem: Problem) -> None:
     """Track live arrays while increasing sample count at fixed batch size."""
     refs: list[weakref.ReferenceType[Batch]] = []
 
-    def stream() -> Iterable[Result[Batch, QraftError]]:
+    def stream() -> Iterable[Result[Batch, QuantSmithError]]:
         """Permit at most the previous and current batches to remain live."""
         for _ in range(40):
             batch = Batch(
@@ -104,7 +104,7 @@ def test_stream_does_not_retain_prior_batches(problem: Problem) -> None:
 @pytest.mark.parametrize("method", [GPTQv2(), GPTQv2(max_workspace_bytes=1)])
 def test_empty_and_workspace_failures(problem: Problem, method: GPTQv2) -> None:
     """Reject empty data or insufficient workspace as expected outcomes."""
-    from qraft.result import Err
+    from quantsmith.result import Err
 
     result = method.reconstruct(problem, lambda: ())
     assert isinstance(result, Err)

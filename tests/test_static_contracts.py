@@ -24,30 +24,34 @@ class Report(BaseModel):
 @pytest.mark.parametrize(
     ("source", "expected", "line"),
     [
-        ("from qraft.domain import PerChannel\nvalue = PerChannel(axis=1)\n", "", 0),
         (
-            "from qraft.calibration import MinMaxStats\n"
+            "from quantsmith.domain import PerChannel\nvalue = PerChannel(axis=1)\n",
+            "",
+            0,
+        ),
+        (
+            "from quantsmith.calibration import MinMaxStats\n"
             "def mutate(stats: MinMaxStats) -> None:\n"
             "    stats.minimum = stats.maximum\n",
             "read-only",
             3,
         ),
         (
-            "from qraft.calibration import HistogramStats\n"
+            "from quantsmith.calibration import HistogramStats\n"
             "def mutate(stats: HistogramStats) -> None:\n"
             "    stats.counts = stats.counts.copy()\n",
             "read-only",
             3,
         ),
         (
-            "from qraft.domain import Encoding\n"
+            "from quantsmith.domain import Encoding\n"
             "def mutate(encoding: Encoding) -> None:\n"
             "    encoding.scale = encoding.scale.copy()\n",
             "read-only",
             3,
         ),
         (
-            "from qraft.plan import RescaleInput\n"
+            "from quantsmith.plan import RescaleInput\n"
             "def mutate(operation: RescaleInput) -> None:\n"
             "    operation.scale = operation.scale.copy()\n",
             "read-only",
@@ -64,24 +68,24 @@ class Report(BaseModel):
             6,
         ),
         (
-            "from qraft.result import Result\n"
-            "from qraft.result import QraftError\n"
-            "def read(value: Result[int, QraftError]) -> None:\n"
+            "from quantsmith.result import Result\n"
+            "from quantsmith.result import QuantSmithError\n"
+            "def read(value: Result[int, QuantSmithError]) -> None:\n"
             "    integer: int = value\n",
             "bad-assignment",
             4,
         ),
         (
-            "from qraft.result import Result\n"
-            "from qraft.result import QraftError\n"
-            "def read(value: Result[int, QraftError]) -> str:\n"
+            "from quantsmith.result import Result\n"
+            "from quantsmith.result import QuantSmithError\n"
+            "def read(value: Result[int, QuantSmithError]) -> str:\n"
             "    return value.unwrap()\n",
             "missing-attribute",
             4,
         ),
         (
-            "from qraft.result import Err, Ok, QraftError, Result\n"
-            "def describe(value: Result[int, QraftError]) -> str:\n"
+            "from quantsmith.result import Err, Ok, QuantSmithError, Result\n"
+            "def describe(value: Result[int, QuantSmithError]) -> str:\n"
             "    match value:\n"
             "        case Ok(number):\n"
             "            return str(number)\n"
@@ -91,8 +95,9 @@ class Report(BaseModel):
             0,
         ),
         (
-            "from qraft.result import Err, Ok, QraftError, Result\n"
-            "def convert(value: Result[int, QraftError]) -> Result[str, QraftError]:\n"
+            "from quantsmith.result import Err, Ok, QuantSmithError, Result\n"
+            "def convert(value: Result[int, QuantSmithError]) -> "
+            "Result[str, QuantSmithError]:\n"
             "    match value:\n"
             "        case Ok(number):\n"
             "            return Ok(str(number))\n"
@@ -103,7 +108,7 @@ class Report(BaseModel):
         ),
         (
             "from typing import assert_never\n"
-            "from qraft.result import Err, Ok, Result\n"
+            "from quantsmith.result import Err, Ok, Result\n"
             "def read(value: Result[tuple[int, int], str]) -> int:\n"
             "    match value:\n"
             "        case Ok(axes):\n"
@@ -117,7 +122,7 @@ class Report(BaseModel):
             0,
         ),
         (
-            "from qraft.result import Err, Ok, Result\n"
+            "from quantsmith.result import Err, Ok, Result\n"
             "def read(value: Result[int, str]) -> str:\n"
             "    match value:\n"
             "        case Ok(number):\n"
@@ -129,7 +134,7 @@ class Report(BaseModel):
         ),
         (
             "from typing import assert_never\n"
-            "from qraft.result import Ok, Result\n"
+            "from quantsmith.result import Ok, Result\n"
             "def read(value: Result[int, str]) -> int:\n"
             "    match value:\n"
             "        case Ok(number):\n"
@@ -140,46 +145,48 @@ class Report(BaseModel):
             8,
         ),
         (
-            "from qraft.result import Result\n"
+            "from quantsmith.result import Result\n"
             "def read(value: Result[int, str]) -> int:\n"
             "    return value.value\n",
             "missing-attribute",
             3,
         ),
         (
-            "from qraft.result import Ok\nvalue = Ok(1)\nvalue.value = 2\n",
+            "from quantsmith.result import Ok\nvalue = Ok(1)\nvalue.value = 2\n",
             "read-only",
             3,
         ),
         (
-            "from qraft.result import Err\n"
+            "from quantsmith.result import Err\n"
             "value = Err('bad input')\n"
             "value.error = 'changed'\n",
             "read-only",
             3,
         ),
         (
-            'from qraft.domain import PerChannel\nvalue = PerChannel(axis="bad")\n',
+            "from quantsmith.domain import PerChannel\n"
+            'value = PerChannel(axis="bad")\n',
             "bad-argument-type",
             2,
         ),
         (
-            "from qraft.domain import PerChannel\nvalue = PerChannel()\n",
+            "from quantsmith.domain import PerChannel\nvalue = PerChannel()\n",
             "missing-argument",
             2,
         ),
         (
-            "from qraft.domain import PerTensor\nvalue = PerTensor(axis=1)\n",
+            "from quantsmith.domain import PerTensor\nvalue = PerTensor(axis=1)\n",
             "unexpected-keyword",
             2,
         ),
         (
-            'from qraft.config import supported\nvalue = supported("not a plugin")\n',
+            "from quantsmith.config import supported\n"
+            'value = supported("not a plugin")\n',
             "bad-argument-type",
             2,
         ),
         (
-            "from qraft.domain import PerTensor, PerChannel\n"
+            "from quantsmith.domain import PerTensor, PerChannel\n"
             "from typing import assert_never\n"
             "def incomplete(value: PerTensor | PerChannel) -> None:\n"
             "    match value:\n"

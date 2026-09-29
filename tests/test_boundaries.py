@@ -7,17 +7,23 @@ import pytest
 from onnx import helper, numpy_helper
 from pydantic import ValidationError
 
-from qraft.algorithms import Algorithm
-from qraft.algorithms.smoothquant import SmoothQuant
-from qraft.algorithms.static import StaticW8A8
-from qraft.backends.onnx import describe, lower, normalize
-from qraft.backends.onnx.pipeline import quantize
-from qraft.calibration import HistogramStats, Requirement, Samples, collect, histograms
-from qraft.config import supported
-from qraft.domain import Encoding, Graph, PerChannel, PerTensor
-from qraft.plan import QuantizationPlan, QuantizeInput, RescaleInput
-from qraft.rules import ByName, Exclude, Rule, Rules
-from qraft.runtime import OnnxEvaluator, evaluate
+from quantsmith.algorithms import Algorithm
+from quantsmith.algorithms.smoothquant import SmoothQuant
+from quantsmith.algorithms.static import StaticW8A8
+from quantsmith.backends.onnx import describe, lower, normalize
+from quantsmith.backends.onnx.pipeline import quantize
+from quantsmith.calibration import (
+    HistogramStats,
+    Requirement,
+    Samples,
+    collect,
+    histograms,
+)
+from quantsmith.config import supported
+from quantsmith.domain import Encoding, Graph, PerChannel, PerTensor
+from quantsmith.plan import QuantizationPlan, QuantizeInput, RescaleInput
+from quantsmith.rules import ByName, Exclude, Rule, Rules
+from quantsmith.runtime import OnnxEvaluator, evaluate
 from tests.conftest import OperatorCase
 from tests.outcomes import expect_error, expect_ok
 from tests.test_calibration import IdentityEvaluator

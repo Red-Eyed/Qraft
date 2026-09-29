@@ -14,7 +14,7 @@ supporting work out of those reading paths:
 - `cli.py`: stderr logs and human/JSON final presentation.
 
 There is no shared model-suite runner. Entry points show their model loading,
-Torch export, calibration mappings, and Qraft calls explicitly. Pure numerical
+Torch export, calibration mappings, and QuantSmith calls explicitly. Pure numerical
 metrics are separated from cache/disk/runtime work; input arrays stay native.
 
 [Browse the runnable model × method matrix](../README.md).

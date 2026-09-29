@@ -9,9 +9,9 @@ from numpy.typing import NDArray
 from onnx import ModelProto, TensorProto, helper
 
 from examples._shared.vision.models import OrtRunner
-from qraft.domain import FloatArray
-from qraft.result import FailureKind
-from qraft.runtime import OnnxEvaluator
+from quantsmith.domain import FloatArray
+from quantsmith.result import FailureKind
+from quantsmith.runtime import OnnxEvaluator
 from tests.outcomes import expect_error, expect_ok
 
 

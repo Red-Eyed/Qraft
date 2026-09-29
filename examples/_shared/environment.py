@@ -16,6 +16,6 @@ def environment() -> Environment:
         torchvision=version("torchvision"),
         onnx=version("onnx"),
         onnxruntime=version("onnxruntime"),
-        qraft=version("qraft"),
+        quantsmith=version("quantsmith"),
         stackformers=version("stackformers"),
     )

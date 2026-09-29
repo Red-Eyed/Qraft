@@ -72,7 +72,7 @@ prints the report as JSON. Downloads and output setup are automatic.
 
 Replace the local windowed model with your attention architecture. Keep your real attention mask and input contract at export, and check parity before quantizing. Replace the character loader/metrics for your task; keep dynamic QK/AV products outside constant-weight selection.
 
-The Qraft boundary in the example is deliberately small:
+The QuantSmith boundary in the example is deliberately small:
 
 ```python
 outcome = quantize(
@@ -83,7 +83,7 @@ outcome = quantize(
 )
 ```
 
-Model training, datasets, and HTML reports are demonstration scaffolding; Qraft
+Model training, datasets, and HTML reports are demonstration scaffolding; QuantSmith
 needs the FP32 ONNX graph, a replayable input factory, and the selected stage rules.
 The result contains `model` and inspectable `plans`, or a typed `Err` diagnostic.
 

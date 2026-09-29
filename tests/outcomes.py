@@ -2,10 +2,10 @@
 
 import pytest
 
-from qraft.result import Err, Ok, QraftError, Result
+from quantsmith.result import Err, Ok, QuantSmithError, Result
 
 
-def expect_ok[T](outcome: Result[T, QraftError]) -> T:
+def expect_ok[T](outcome: Result[T, QuantSmithError]) -> T:
     """Assert success and include the structured diagnostic on test failure."""
     match outcome:
         case Err(error):
@@ -14,7 +14,9 @@ def expect_ok[T](outcome: Result[T, QraftError]) -> T:
             return value
 
 
-def expect_error[T](outcome: Result[T, QraftError], detail: str) -> QraftError:
+def expect_error[T](
+    outcome: Result[T, QuantSmithError], detail: str
+) -> QuantSmithError:
     """Assert an expected rejection and retain its structured reason for checks."""
     match outcome:
         case Err(error):

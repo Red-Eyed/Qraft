@@ -1,20 +1,20 @@
-# Contributing to Qraft
+# Contributing to QuantSmith
 
-Qraft is built for experiments that can be inspected and reproduced. Contributions
+QuantSmith is built for experiments that can be inspected and reproduced. Contributions
 are most useful when they make a quantization decision easier to understand,
 measure, or extend.
 
 ## Find the right starting point
 
 - **New calibration or quantization method:** Read the
-  [algorithm guide](src/qraft/algorithms/README.md) and its existing method
+  [algorithm guide](src/quantsmith/algorithms/README.md) and its existing method
   packages. Keep the decision logic in its own package and select it through
   `Rules[Algorithm]`.
 - **New reconstruction method:** Read the
-  [reconstruction guide](src/qraft/reconstruction/README.md) and its paired-replay
+  [reconstruction guide](src/quantsmith/reconstruction/README.md) and its paired-replay
   contract. Reconstruction methods use `Rules[Reconstructor]`.
 - **ONNX support or graph lowering:** Read the
-  [backend guide](src/qraft/backends/onnx/README.md) and cover the new graph
+  [backend guide](src/quantsmith/backends/onnx/README.md) and cover the new graph
   behavior with an ONNX Runtime integration test.
 - **A model or task comparison:** Follow an [example](examples/README.md). Keep
   export, calibration inputs, method selection, and held-out evaluation visible
@@ -53,7 +53,7 @@ baseline, calibration setup, held-out metric, and failure cases alongside any
 improvement. Do not present a QDQ export as evidence of speedup or compression.
 
 Use typed domain records and validate external values at the boundary. Expected
-execution, data, and planning failures use Qraft's `Ok[T] | Err[E]` result union;
+execution, data, and planning failures use QuantSmith's `Ok[T] | Err[E]` result union;
 handle both variants explicitly. Unexpected plugin failures and broken
 invariants remain exceptions. Keep comments focused on stable intent and
 non-obvious constraints, and give every Python module, class, and function a

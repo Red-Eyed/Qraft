@@ -3,9 +3,9 @@
 import numpy as np
 import pytest
 
-from qraft.domain import Encoding, PerChannel, PerTensor
-from qraft.reconstruction import Batch, Linear, Problem, Replay
-from qraft.result import Ok
+from quantsmith.domain import Encoding, PerChannel, PerTensor
+from quantsmith.reconstruction import Batch, Linear, Problem, Replay
+from quantsmith.result import Ok
 
 
 @pytest.fixture

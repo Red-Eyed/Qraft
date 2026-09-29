@@ -73,7 +73,7 @@ prints the report as JSON. Downloads and output setup are automatic.
 
 Replace `WineMLP` and the Wine loader with your tabular model and features. Fit preprocessing on training data only. Keep feature arrays float32 and the input name consistent with export. Replace cultivar labels/accuracy with your own target definition and metric.
 
-The Qraft boundary in the example is deliberately small:
+The QuantSmith boundary in the example is deliberately small:
 
 ```python
 outcome = quantize(
@@ -84,7 +84,7 @@ outcome = quantize(
 )
 ```
 
-Model training, datasets, and HTML reports are demonstration scaffolding; Qraft
+Model training, datasets, and HTML reports are demonstration scaffolding; QuantSmith
 needs the FP32 ONNX graph, a replayable input factory, and the selected stage rules.
 The result contains `model` and inspectable `plans`, or a typed `Err` diagnostic.
 

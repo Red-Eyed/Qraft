@@ -16,10 +16,10 @@ from examples._shared.training.schema import (
     TaskKind,
     Tokens,
 )
-from qraft.domain import FloatArray, InputArray
-from qraft.result import Err, Ok, QraftError, Result
+from quantsmith.domain import FloatArray, InputArray
+from quantsmith.result import Err, Ok, QuantSmithError, Result
 
-type Predictor = Callable[[InputArray], Result[FloatArray, QraftError]]
+type Predictor = Callable[[InputArray], Result[FloatArray, QuantSmithError]]
 
 
 class Totals(BaseModel):
@@ -81,7 +81,7 @@ class Totals(BaseModel):
 
 def continuation(
     predict: Predictor, context: Tokens, labels: tuple[str, ...], length: int
-) -> Result[str, QraftError]:
+) -> Result[str, QuantSmithError]:
     """Greedily generate text with exactly the exported fixed-size rolling context."""
     current = context.copy()
     generated: list[str] = []
@@ -105,7 +105,7 @@ def demonstrate(
     logits: FloatArray,
     predict: Predictor,
     config: Config,
-) -> Result[Demonstration, QraftError]:
+) -> Result[Demonstration, QuantSmithError]:
     """Display early held-out cases in selection order, without cherry-picking."""
     expected = data.evaluation.targets[row].reshape(-1)
     indices = logits.reshape(-1, len(data.labels)).argmax(axis=-1)
@@ -148,7 +148,7 @@ def measure(
     data: Dataset,
     config: Config,
     progress: Progress,
-) -> Result[tuple[dict[Method, Scores], tuple[Demonstration, ...]], QraftError]:
+) -> Result[tuple[dict[Method, Scores], tuple[Demonstration, ...]], QuantSmithError]:
     """Evaluate identical held-out inputs across variants, one row/window at a time."""
     totals = {method: Totals() for method in predictors}
     demonstrations: list[Demonstration] = []
@@ -191,7 +191,7 @@ def measure(
 
 def benchmark(
     predict: Predictor, inputs: InputArray, config: Config
-) -> Result[Latency, QraftError]:
+) -> Result[Latency, QuantSmithError]:
     """Measure warmed batch-one inference with preprocessing and startup excluded."""
     timings: list[float] = []
     for index in range(config.warmup + config.benchmark_runs):

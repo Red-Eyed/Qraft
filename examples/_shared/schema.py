@@ -5,7 +5,7 @@ from typing import assert_never
 
 from pydantic import BaseModel, Field
 
-from qraft.domain import Absent
+from quantsmith.domain import Absent
 
 
 class Method(StrEnum):
@@ -45,7 +45,7 @@ class Environment(BaseModel):
     torchvision: str = Field()
     onnx: str = Field()
     onnxruntime: str = Field()
-    qraft: str = Field()
+    quantsmith: str = Field()
     stackformers: str | Absent = Field(
         default_factory=lambda: Absent(reason="not recorded by this report version")
     )
